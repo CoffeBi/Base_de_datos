@@ -1,4 +1,4 @@
-Sistema de Registro de Ventas-Java
+Sistema de Registro de Ventas-Java y python
 
 Descripción
 Este es un programa que fue hecho con fines educativos, para poder visualizar el almacén de los datos 
@@ -26,3 +26,6 @@ Compilacion y ejecutacion
    ```bash
    javac RegistroVentas.java
      ```
+
+en python sucede totalmente lo mismo lo unco que cambia son algunas cosas debido a la diferencia de los lenguajes, pero los dos tienen la misma funcion.
+
