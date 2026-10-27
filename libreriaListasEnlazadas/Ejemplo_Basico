@@ -1,0 +1,23 @@
+from lista_enlazada import ListaEnlazada
+
+lista = ListaEnlazada()
+a = lista.insertar_final(10)
+b = lista.insertar_final(20)
+c = lista.insertar_final(30)
+print('Inicial:', lista.obtener_datos())
+
+lista.insertar_posicion(15, 2)
+print('Insertar en posición 2:', lista.obtener_datos())
+print('Buscar 20:', [(pos, nodo.id) for pos, nodo in lista.buscar(20)])
+
+# 10 ahora apunta directamente a 30; 15 y 20 quedan desconectados.
+lista.conectar(a.id, c.id)
+print('Después de redirigir:', lista.obtener_datos())
+print('Desconectados:', [(n.id, n.dato) for n in lista.nodos_desconectados()])
+
+# 30 apunta a 10 y se forma un ciclo.
+lista.conectar(c.id, a.id)
+print('¿Hay ciclo?', lista.hay_ciclo())
+
+lista.desconectar(c.id)
+print('Después de romper el ciclo:', lista.obtener_datos())
