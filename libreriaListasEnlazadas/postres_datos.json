@@ -1,0 +1,19 @@
+[
+  {
+    "nombre": "Pastel",
+    "ingredientes": [
+      "Harina"
+    ],
+    "pasos": [
+      "pesar cada ingrediente",
+      "revolver los liquidoa aparte",
+      "revolve las harinas y todo lo que sea polvo",
+      "unificar todo",
+      "ponerlo en un tazon para meter al horno",
+      "calentar el horno a 180 grados",
+      "poner el pastel por una hora y media",
+      "sacar y ponerlo a reposar",
+      "despues de una hora decorar"
+    ]
+  }
+]
