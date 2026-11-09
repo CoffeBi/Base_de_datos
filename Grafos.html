@@ -1,0 +1,1837 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADA7 | Explorador de Grafos</title>
+
+<style>
+:root {
+    --bg: #0b1220;
+    --panel: #17243a;
+    --panel2: #20314b;
+    --text: #f1f5f9;
+    --muted: #a9bad0;
+    --blue: #60a5fa;
+    --green: #34d399;
+    --orange: #fbbf24;
+    --red: #fb7185;
+    --border: #34445c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+header {
+    padding: 22px 30px;
+    border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 27px;
+}
+
+header p {
+    margin: 7px 0 0;
+    color: var(--muted);
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    align-items: center;
+    padding: 15px 25px;
+    background: var(--panel);
+}
+
+button, select, input {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 13px;
+    font-size: 13px;
+}
+
+button {
+    color: #071626;
+    background: var(--blue);
+    font-weight: 650;
+    cursor: pointer;
+    transition: filter .15s;
+}
+
+button:hover {
+    filter: brightness(1.12);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+select, input {
+    background: #f8fafc;
+    color: #172033;
+}
+
+.green { background: var(--green); }
+.orange { background: var(--orange); }
+.red { background: var(--red); }
+.gray { background: #bdcbe0; }
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 17px 25px;
+}
+
+.stat {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px 18px;
+}
+
+.stat small {
+    color: var(--muted);
+}
+
+.stat strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 23px;
+    overflow-wrap: anywhere;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+    gap: 14px;
+    margin: 0 25px 20px;
+    min-height: 560px;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 14px;
+    min-width: 0;
+}
+
+.panel-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.panel-title h2 {
+    font-size: 17px;
+    margin: 0;
+}
+
+.panel-title span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.map-container {
+    background: #eaf4f6;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    height: 530px;
+}
+
+#mapa {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: grab;
+}
+
+#mapa:active {
+    cursor: grabbing;
+}
+
+.map-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.map-controls button {
+    width: 39px;
+    padding: 9px;
+    background: white;
+    color: #163149;
+    box-shadow: 0 2px 9px #0002;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.dot {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    margin-right: 4px;
+}
+
+.results {
+    height: 530px;
+    overflow-y: auto;
+    padding: 4px 3px;
+}
+
+.route-card {
+    padding: 13px;
+    background: var(--panel2);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.route-card h3 {
+    margin: 0 0 9px;
+    font-size: 15px;
+}
+
+.route-card p {
+    line-height: 1.6;
+    margin: 6px 0;
+    overflow-wrap: anywhere;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.total {
+    color: var(--green);
+    font-size: 24px;
+    font-weight: 750;
+}
+
+.step {
+    border-left: 3px solid var(--green);
+    padding: 8px 12px;
+    margin: 10px 0;
+    background: #223851;
+    border-radius: 0 7px 7px 0;
+}
+
+.step small {
+    color: var(--muted);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th, td {
+    padding: 8px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+
+th {
+    background: #2a405c;
+}
+
+.table-scroll {
+    overflow-x: auto;
+}
+
+.status {
+    padding: 12px 25px 20px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: #0009;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+}
+
+.modal {
+    width: min(430px, 100%);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: 22px;
+    box-shadow: 0 20px 70px #0008;
+}
+
+.modal h2 {
+    margin: 0 0 15px;
+}
+
+.modal label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 5px;
+    color: var(--muted);
+}
+
+.modal input, .modal select {
+    width: 100%;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 23px;
+}
+
+@media(max-width: 1050px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .map-container, .results {
+        height: 430px;
+    }
+}
+
+@media(max-width: 600px) {
+    header {
+        padding: 18px;
+    }
+
+    header h1 {
+        font-size: 21px;
+    }
+
+    .toolbar {
+        padding: 12px;
+    }
+
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+        margin: 12px;
+    }
+
+    .layout {
+        margin: 12px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>ADA7 · Explorador de Grafos</h1>
+    <p>
+        Unidad 4 · Estructuras No Lineales ·
+        Planificador de rutas entre estados de México
+    </p>
+</header>
+
+<section class="toolbar">
+    <label for="inicio">Estado inicial:</label>
+    <select id="inicio"></select>
+
+    <button class="green" onclick="ejecutarRuta('sin')">
+        Sin repetir
+    </button>
+
+    <button class="orange" onclick="ejecutarRuta('con')">
+        Con repetición
+    </button>
+
+    <button onclick="comparar()">Comparar</button>
+    <button onclick="mostrarRelaciones()">Relaciones</button>
+    <button onclick="mostrarMatriz()">Matriz</button>
+</section>
+
+<section class="toolbar">
+    <button class="green" onclick="formEstado()">
+        + Estado
+    </button>
+
+    <button onclick="formRenombrar()">
+        Renombrar
+    </button>
+
+    <button class="red" onclick="formEliminarEstado()">
+        − Estado
+    </button>
+
+    <button class="green" onclick="formConexion()">
+        + Conexión
+    </button>
+
+    <button class="orange" onclick="formEditarConexion()">
+        Editar distancia
+    </button>
+
+    <button class="red" onclick="formEliminarConexion()">
+        − Conexión
+    </button>
+
+    <button class="gray" onclick="guardarJSON()">
+        Exportar JSON
+    </button>
+
+    <button class="gray" onclick="document.getElementById('archivo').click()">
+        Importar JSON
+    </button>
+
+    <button class="gray" onclick="exportarSVG()">
+        Exportar SVG
+    </button>
+
+    <input
+        type="file"
+        id="archivo"
+        accept=".json,application/json"
+        hidden
+        onchange="abrirJSON(event)"
+    >
+</section>
+
+<section class="stats">
+    <div class="stat">
+        <small>Estado inicial</small>
+        <strong id="statInicio">Yucatán</strong>
+    </div>
+
+    <div class="stat">
+        <small>Estados del grafo</small>
+        <strong id="statEstados">7</strong>
+    </div>
+
+    <div class="stat">
+        <small>Estados visitados</small>
+        <strong id="statVisitados">0</strong>
+    </div>
+
+    <div class="stat">
+        <small>Distancia total</small>
+        <strong id="statDistancia">—</strong>
+    </div>
+</section>
+
+<main class="layout">
+
+    <section class="panel">
+        <div class="panel-title">
+            <h2>Mapa interactivo</h2>
+            <span>Arrastra los estados para moverlos</span>
+        </div>
+
+        <div class="map-container">
+            <svg
+                id="mapa"
+                viewBox="0 0 1000 650"
+                xmlns="http://www.w3.org/2000/svg"
+            ></svg>
+
+            <div class="map-controls">
+                <button onclick="zoom(0.8)">+</button>
+                <button onclick="zoom(1.25)">−</button>
+                <button onclick="resetVista()">⌖</button>
+            </div>
+        </div>
+
+        <div class="legend">
+            <span><i class="dot" style="background:#458bd4"></i>Sin visitar</span>
+            <span><i class="dot" style="background:#24af83"></i>Visitado</span>
+            <span><i class="dot" style="background:#f1ac3d"></i>Destino</span>
+            <span>Las etiquetas de las conexiones indican km.</span>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-title">
+            <h2>Resultados e itinerario</h2>
+            <span id="tipoResultado">Información</span>
+        </div>
+
+        <div id="resultados" class="results"></div>
+    </section>
+
+</main>
+
+<footer class="status" id="estado">
+    Selecciona un estado inicial y calcula un recorrido.
+</footer>
+
+<div class="modal-backdrop" id="modalFondo">
+    <div class="modal">
+        <h2 id="modalTitulo"></h2>
+        <div id="modalCampos"></div>
+
+        <div class="modal-actions">
+            <button class="gray" onclick="cerrarModal()">
+                Cancelar
+            </button>
+            <button class="green" id="modalAceptar">
+                Guardar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// =====================================================
+// DATOS DEL GRAFO
+// =====================================================
+
+// Distancias académicas de ejemplo.
+// Puedes cambiarlas desde la interfaz.
+
+const conexionesIniciales = [
+    ["Yucatán", "Veracruz", 950],
+    ["Yucatán", "Oaxaca", 1100],
+    ["Veracruz", "Oaxaca", 300],
+    ["Veracruz", "CDMX", 400],
+    ["Oaxaca", "CDMX", 460],
+    ["CDMX", "Guanajuato", 390],
+    ["CDMX", "Nuevo León", 900],
+    ["CDMX", "Chihuahua", 1450],
+    ["Guanajuato", "Nuevo León", 700],
+    ["Guanajuato", "Chihuahua", 1200],
+    ["Nuevo León", "Chihuahua", 800]
+];
+
+const posicionesIniciales = {
+    "Chihuahua": [150, 145],
+    "Nuevo León": [410, 135],
+    "Guanajuato": [300, 325],
+    "CDMX": [555, 330],
+    "Veracruz": [790, 255],
+    "Oaxaca": [665, 520],
+    "Yucatán": [895, 530]
+};
+
+let grafo = {};
+let posiciones = {};
+
+let rutaActual = [];
+let costoActual = null;
+
+let vista = {
+    x: 0,
+    y: 0,
+    w: 1000,
+    h: 650
+};
+
+let arrastrando = null;
+let movimientoMapa = null;
+let animacion = null;
+
+const svg = document.getElementById("mapa");
+
+// =====================================================
+// INICIALIZACIÓN
+// =====================================================
+
+function inicializar() {
+    const guardado = localStorage.getItem("ADA7_GRAFOS_WEB");
+
+    if (guardado) {
+        try {
+            const datos = JSON.parse(guardado);
+            validarDatos(datos);
+            grafo = datos.grafo;
+            posiciones = datos.posiciones;
+        } catch (error) {
+            cargarEjemplo();
+        }
+    } else {
+        cargarEjemplo();
+    }
+
+    actualizarSelector();
+    actualizarEstadisticas();
+    dibujar();
+    mostrarRelaciones();
+}
+
+function cargarEjemplo() {
+    grafo = {};
+
+    for (const nombre of Object.keys(posicionesIniciales)) {
+        grafo[nombre] = {};
+    }
+
+    for (const [a, b, km] of conexionesIniciales) {
+        grafo[a][b] = km;
+        grafo[b][a] = km;
+    }
+
+    posiciones = structuredClone(posicionesIniciales);
+}
+
+function validarDatos(datos) {
+    if (!datos || typeof datos !== "object") {
+        throw new Error("Archivo inválido");
+    }
+
+    const g = datos.grafo;
+    const p = datos.posiciones;
+
+    if (!g || !p || typeof g !== "object" ||
+        typeof p !== "object" || Array.isArray(g)) {
+        throw new Error("Formato incorrecto");
+    }
+
+    const nombres = Object.keys(g);
+
+    if (nombres.length > 100 ||
+        nombres.some(n => !n || n.length > 40) ||
+        Object.keys(p).length !== nombres.length) {
+        throw new Error("Cantidad o nombres inválidos");
+    }
+
+    for (const nombre of nombres) {
+        const pos = p[nombre];
+
+        if (!Array.isArray(pos) || pos.length !== 2 ||
+            !pos.every(v => Number.isFinite(v) &&
+                v >= -10000 && v <= 10000)) {
+            throw new Error("Posición inválida");
+        }
+
+        if (!g[nombre] || typeof g[nombre] !== "object" ||
+            Array.isArray(g[nombre])) {
+            throw new Error("Conexiones inválidas");
+        }
+
+        for (const [vecino, km] of Object.entries(g[nombre])) {
+            if (nombre === vecino ||
+                !Object.hasOwn(g, vecino) ||
+                !Number.isInteger(km) ||
+                km <= 0 || km > 10000000 ||
+                g[vecino]?.[nombre] !== km) {
+                throw new Error("Distancia o conexión inválida");
+            }
+        }
+    }
+}
+
+function persistir() {
+    localStorage.setItem(
+        "ADA7_GRAFOS_WEB",
+        JSON.stringify({grafo, posiciones})
+    );
+}
+
+function actualizarSelector() {
+    const select = document.getElementById("inicio");
+    const anterior = select.value;
+
+    select.replaceChildren();
+
+    for (const nombre of Object.keys(grafo)) {
+        const opcion = document.createElement("option");
+        opcion.value = nombre;
+        opcion.textContent = nombre;
+        select.appendChild(opcion);
+    }
+
+    if (Object.hasOwn(grafo, anterior)) {
+        select.value = anterior;
+    }
+
+    actualizarEstadisticas();
+}
+
+function actualizarEstadisticas() {
+    document.getElementById("statInicio").textContent =
+        document.getElementById("inicio").value || "—";
+
+    document.getElementById("statEstados").textContent =
+        Object.keys(grafo).length;
+
+    document.getElementById("statVisitados").textContent =
+        new Set(rutaActual).size;
+
+    document.getElementById("statDistancia").textContent =
+        costoActual === null
+            ? "—"
+            : `${costoActual.toLocaleString("es-MX")} km`;
+}
+
+document.getElementById("inicio").addEventListener(
+    "change", actualizarEstadisticas
+);
+
+// =====================================================
+// FUNCIONES MATEMÁTICAS
+// =====================================================
+
+function costoRuta(ruta) {
+    let total = 0;
+
+    for (let i = 0; i < ruta.length - 1; i++) {
+        total += grafo[ruta[i]][ruta[i + 1]];
+    }
+
+    return total;
+}
+
+// Recorrido más corto que visita todos una vez.
+// Backtracking con poda.
+function sinRepetir(inicio) {
+    let mejorRuta = null;
+    let mejorCosto = Infinity;
+
+    const cantidad = Object.keys(grafo).length;
+
+    if (!cantidad || !Object.hasOwn(grafo, inicio)) {
+        return null;
+    }
+
+    function explorar(actual, ruta, visitados, costo) {
+        if (costo >= mejorCosto) return;
+
+        if (visitados.size === cantidad) {
+            mejorRuta = [...ruta];
+            mejorCosto = costo;
+            return;
+        }
+
+        const vecinos = Object.entries(grafo[actual])
+            .sort((a, b) => a[1] - b[1]);
+
+        for (const [vecino, km] of vecinos) {
+            if (!visitados.has(vecino)) {
+                visitados.add(vecino);
+                ruta.push(vecino);
+
+                explorar(
+                    vecino,
+                    ruta,
+                    visitados,
+                    costo + km
+                );
+
+                ruta.pop();
+                visitados.delete(vecino);
+            }
+        }
+    }
+
+    explorar(inicio, [inicio], new Set([inicio]), 0);
+
+    return mejorRuta
+        ? {ruta: mejorRuta, costo: mejorCosto}
+        : null;
+}
+
+// Cola de prioridad mínima
+class MinHeap {
+    constructor() {
+        this.datos = [];
+    }
+
+    push(elemento) {
+        const a = this.datos;
+        a.push(elemento);
+
+        let i = a.length - 1;
+
+        while (i > 0) {
+            const p = Math.floor((i - 1) / 2);
+            if (a[p][0] <= a[i][0]) break;
+
+            [a[p], a[i]] = [a[i], a[p]];
+            i = p;
+        }
+    }
+
+    pop() {
+        const a = this.datos;
+        if (!a.length) return null;
+
+        const primero = a[0];
+        const ultimo = a.pop();
+
+        if (!a.length) return primero;
+
+        a[0] = ultimo;
+        let i = 0;
+
+        while (true) {
+            let menor = i;
+            const izq = 2 * i + 1;
+            const der = 2 * i + 2;
+
+            if (izq < a.length &&
+                a[izq][0] < a[menor][0]) menor = izq;
+
+            if (der < a.length &&
+                a[der][0] < a[menor][0]) menor = der;
+
+            if (menor === i) break;
+
+            [a[i], a[menor]] = [a[menor], a[i]];
+            i = menor;
+        }
+
+        return primero;
+    }
+
+    get size() {
+        return this.datos.length;
+    }
+}
+
+// Dijkstra por estados:
+// nodo actual, máscara visitada, repetición.
+function conRepeticion(inicio) {
+    const nombres = Object.keys(grafo);
+
+    if (!nombres.length || !Object.hasOwn(grafo, inicio)) {
+        return null;
+    }
+
+    const indices = Object.fromEntries(
+        nombres.map((nombre, i) => [nombre, i])
+    );
+
+    const bits = nombres.map((_, i) => 1n << BigInt(i));
+    const todos = (1n << BigInt(nombres.length)) - 1n;
+
+    const clave = (n, mascara, rep) =>
+        `${n}|${mascara}|${rep ? 1 : 0}`;
+
+    const inicioMask = bits[indices[inicio]];
+    const inicioKey = clave(inicio, inicioMask, false);
+
+    const dist = new Map([[inicioKey, 0]]);
+    const prev = new Map([[inicioKey, null]]);
+    const valores = new Map([
+        [inicioKey, [inicio, inicioMask, false]]
+    ]);
+
+    const cola = new MinHeap();
+    cola.push([0, inicioKey]);
+
+    while (cola.size) {
+        const [costo, key] = cola.pop();
+
+        if (costo !== dist.get(key)) continue;
+
+        const [actual, mascara, repitio] = valores.get(key);
+
+        if (mascara === todos && repitio) {
+            const ruta = [];
+            let paso = key;
+
+            while (paso !== null) {
+                ruta.push(valores.get(paso)[0]);
+                paso = prev.get(paso);
+            }
+
+            ruta.reverse();
+            return {ruta, costo};
+        }
+
+        for (const [vecino, km] of Object.entries(grafo[actual])) {
+            const bit = bits[indices[vecino]];
+            const yaVisitado = (mascara & bit) !== 0n;
+
+            const nuevaMascara = mascara | bit;
+            const nuevaRep = repitio || yaVisitado;
+            const nuevaClave = clave(vecino, nuevaMascara, nuevaRep);
+            const nuevoCosto = costo + km;
+
+            if (nuevoCosto < (dist.get(nuevaClave) ?? Infinity)) {
+                dist.set(nuevaClave, nuevoCosto);
+                prev.set(nuevaClave, key);
+                valores.set(nuevaClave, [
+                    vecino, nuevaMascara, nuevaRep
+                ]);
+
+                cola.push([nuevoCosto, nuevaClave]);
+            }
+        }
+    }
+
+    return null;
+}
+
+function calcular(tipo) {
+    const inicio = document.getElementById("inicio").value;
+    const n = Object.keys(grafo).length;
+
+    if (!inicio) {
+        alert("Primero agrega un estado.");
+        return undefined;
+    }
+
+    // Evita cálculos exponenciales demasiado grandes.
+    if (n > 13) {
+        alert(
+            "El cálculo exacto está limitado a 13 estados. " +
+            "Puedes seguir agregando, editando y visualizando el grafo."
+        );
+        return undefined;
+    }
+
+    return tipo === "sin"
+        ? sinRepetir(inicio)
+        : conRepeticion(inicio);
+}
+
+// =====================================================
+// MOSTRAR RESULTADOS
+// =====================================================
+
+function escapar(texto) {
+    return String(texto).replace(/[&<>"']/g, caracter => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[caracter]);
+}
+
+function tarjeta(titulo, contenido) {
+    return `
+        <article class="route-card">
+            <h3>${escapar(titulo)}</h3>
+            ${contenido}
+        </article>
+    `;
+}
+
+function escribir(html, tipo) {
+    document.getElementById("resultados").innerHTML = html;
+    document.getElementById("tipoResultado").textContent = tipo;
+}
+
+function cambiarDatos() {
+    detenerAnimacion();
+    rutaActual = [];
+    costoActual = null;
+
+    persistir();
+    actualizarSelector();
+    actualizarEstadisticas();
+    dibujar();
+    mostrarRelaciones();
+}
+
+function ejecutarRuta(tipo) {
+    const resultado = calcular(tipo);
+
+    if (resultado === undefined) return;
+
+    const nombre = tipo === "sin"
+        ? "Recorrido sin repetir"
+        : "Recorrido con repetición";
+
+    if (resultado === null) {
+        detenerAnimacion();
+        rutaActual = [];
+        costoActual = null;
+        actualizarEstadisticas();
+        dibujar();
+
+        escribir(
+            tarjeta("Ruta no disponible",
+                "<p>No existe un recorrido que cumpla " +
+                "las condiciones desde el estado seleccionado.</p>" +
+                "<p class='muted'>Puedes crear conexiones " +
+                "o cambiar el estado inicial.</p>"
+            ),
+            nombre
+        );
+        return;
+    }
+
+    mostrarResultadoRuta(nombre, resultado);
+    animarRuta(resultado.ruta, resultado.costo);
+}
+
+function mostrarResultadoRuta(titulo, resultado) {
+    const {ruta, costo} = resultado;
+    const repetidos = [...new Set(
+        ruta.filter(e => ruta.indexOf(e) !== ruta.lastIndexOf(e))
+    )];
+
+    let html = tarjeta(
+        "Resumen",
+        `<p>Origen: <b>${escapar(ruta[0])}</b></p>
+         <p>Estados diferentes: <b>${new Set(ruta).size}</b></p>
+         <p>Visitas totales: <b>${ruta.length}</b></p>
+         <p>Repetidos: <b>${escapar(repetidos.join(", ") || "Ninguno")}</b></p>
+         <p class="total">${costo.toLocaleString("es-MX")} km</p>`
+    );
+
+    html += `<h3>Itinerario</h3>`;
+
+    if (ruta.length === 1) {
+        html += tarjeta("Inicio", escapar(ruta[0]));
+    }
+
+    for (let i = 0; i < ruta.length - 1; i++) {
+        const a = ruta[i];
+        const b = ruta[i + 1];
+        const km = grafo[a][b];
+
+        html += `
+            <div class="step">
+                <small>Tramo ${i + 1}</small>
+                <div><b>${escapar(a)}</b> → <b>${escapar(b)}</b></div>
+                <small>${km.toLocaleString("es-MX")} km</small>
+            </div>
+        `;
+    }
+
+    html += tarjeta(
+        "Ruta completa",
+        `<p>${ruta.map(escapar).join(" → ")}</p>`
+    );
+
+    escribir(html, titulo);
+}
+
+function comparar() {
+    const a = calcular("sin");
+    const b = calcular("con");
+
+    if (a === undefined || b === undefined) return;
+
+    detenerAnimacion();
+    rutaActual = [];
+    costoActual = null;
+    actualizarEstadisticas();
+    dibujar();
+
+    let html = "";
+
+    for (const [titulo, resultado] of [
+        ["Sin repetir", a],
+        ["Con repetición", b]
+    ]) {
+        html += tarjeta(
+            titulo,
+            resultado
+                ? `<p>${resultado.ruta.map(escapar).join(" → ")}</p>
+                   <p class="total">${resultado.costo.toLocaleString("es-MX")} km</p>`
+                : "<p>No existe un recorrido válido.</p>"
+        );
+    }
+
+    if (a && b) {
+        const diferencia = Math.abs(a.costo - b.costo);
+
+        const ganador = a.costo < b.costo
+            ? "Sin repetir"
+            : b.costo < a.costo
+                ? "Con repetición"
+                : "Empate";
+
+        html += tarjeta(
+            "Conclusión",
+            `<p>Menor distancia: <b>${ganador}</b></p>
+             <p>Diferencia: <b>${diferencia.toLocaleString("es-MX")} km</b></p>`
+        );
+    }
+
+    escribir(html, "Comparación");
+}
+
+function relaciones() {
+    const resultado = [];
+    const vistos = new Set();
+
+    for (const [a, vecinos] of Object.entries(grafo)) {
+        for (const [b, km] of Object.entries(vecinos)) {
+            const clave = [a, b].sort().join("\u0000");
+
+            if (!vistos.has(clave)) {
+                vistos.add(clave);
+                resultado.push([a, b, km]);
+            }
+        }
+    }
+
+    return resultado;
+}
+
+function mostrarRelaciones() {
+    let html = tarjeta(
+        "Información del grafo",
+        `<p>Estados: <b>${Object.keys(grafo).length}</b></p>
+         <p>Conexiones: <b>${relaciones().length}</b></p>
+         <p class="muted">Grafo no dirigido y ponderado.
+         Los costos representan kilómetros de ejemplo.</p>`
+    );
+
+    html += "<h3>Estados</h3>";
+
+    for (const nombre of Object.keys(grafo)) {
+        html += tarjeta(nombre, "");
+    }
+
+    html += "<h3>Conexiones</h3>";
+
+    for (const [a, b, km] of relaciones()) {
+        html += tarjeta(
+            `${a} ↔ ${b}`,
+            `<p>${km.toLocaleString("es-MX")} km</p>`
+        );
+    }
+
+    escribir(html, "Relaciones");
+}
+
+function mostrarMatriz() {
+    const nombres = Object.keys(grafo);
+
+    let html = "<div class='table-scroll'><table><thead><tr><th>Estado</th>";
+
+    for (const nombre of nombres) {
+        html += `<th>${escapar(nombre)}</th>`;
+    }
+
+    html += "</tr></thead><tbody>";
+
+    for (const a of nombres) {
+        html += `<tr><th>${escapar(a)}</th>`;
+
+        for (const b of nombres) {
+            html += `<td>${grafo[a][b] ?? 0}</td>`;
+        }
+
+        html += "</tr>";
+    }
+
+    html += "</tbody></table></div>";
+
+    escribir(html, "Matriz de adyacencia");
+}
+
+// =====================================================
+// ANIMACIÓN
+// =====================================================
+
+function detenerAnimacion() {
+    if (animacion !== null) {
+        clearTimeout(animacion);
+        animacion = null;
+    }
+}
+
+function animarRuta(ruta, costo) {
+    detenerAnimacion();
+
+    rutaActual = [];
+    costoActual = costo;
+
+    let i = 0;
+
+    function paso() {
+        if (i >= ruta.length) {
+            animacion = null;
+            document.getElementById("estado").textContent =
+                "Recorrido completado.";
+            return;
+        }
+
+        rutaActual.push(ruta[i]);
+
+        document.getElementById("estado").textContent =
+            `Visitando ${ruta[i]} · ${i + 1}/${ruta.length}`;
+
+        actualizarEstadisticas();
+        dibujar();
+
+        i++;
+        animacion = setTimeout(paso, 500);
+    }
+
+    paso();
+}
+
+// =====================================================
+// MODALES Y FORMULARIOS
+// =====================================================
+
+function abrirModal(titulo, campos, callback) {
+    document.getElementById("modalTitulo").textContent = titulo;
+
+    const contenedor = document.getElementById("modalCampos");
+    contenedor.replaceChildren();
+
+    for (const campo of campos) {
+        const label = document.createElement("label");
+        label.textContent = campo.label;
+
+        let control;
+
+        if (campo.tipo === "select") {
+            control = document.createElement("select");
+
+            for (const opcion of campo.opciones) {
+                const elemento = document.createElement("option");
+                elemento.value = opcion;
+                elemento.textContent = opcion;
+                control.appendChild(elemento);
+            }
+        } else {
+            control = document.createElement("input");
+            control.type = campo.tipo || "text";
+
+            if (campo.valor !== undefined) {
+                control.value = campo.valor;
+            }
+
+            if (campo.tipo === "number") {
+                control.min = "1";
+                control.max = "10000000";
+                control.step = "1";
+            }
+
+            control.maxLength = 40;
+        }
+
+        control.id = `campo_${campo.id}`;
+
+        contenedor.appendChild(label);
+        contenedor.appendChild(control);
+    }
+
+    document.getElementById("modalAceptar").onclick = () => {
+        const datos = {};
+
+        for (const campo of campos) {
+            datos[campo.id] = document.getElementById(
+                `campo_${campo.id}`
+            ).value.trim();
+        }
+
+        if (callback(datos) !== false) {
+            cerrarModal();
+        }
+    };
+
+    document.getElementById("modalFondo").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modalFondo").style.display = "none";
+}
+
+document.getElementById("modalFondo").addEventListener(
+    "click",
+    event => {
+        if (event.target.id === "modalFondo") cerrarModal();
+    }
+);
+
+function campoEstado(id, label, excluir = null) {
+    return {
+        id,
+        label,
+        tipo: "select",
+        opciones: Object.keys(grafo).filter(e => e !== excluir)
+    };
+}
+
+function nombresIguales(a, b) {
+    return a.toLocaleLowerCase("es") ===
+           b.toLocaleLowerCase("es");
+}
+
+function nombreExiste(nombre, excluir = null) {
+    return Object.keys(grafo).some(
+        e => e !== excluir && nombresIguales(e, nombre)
+    );
+}
+
+function formEstado() {
+    abrirModal(
+        "Agregar estado",
+        [{id: "nombre", label: "Nombre del estado"}],
+        datos => {
+            const nombre = datos.nombre;
+
+            if (!nombre || nombre.length > 40 ||
+                nombreExiste(nombre) ||
+                ["__proto__", "constructor", "prototype"].includes(nombre)) {
+                alert("El nombre está vacío, duplicado o no es válido.");
+                return false;
+            }
+
+            grafo[nombre] = {};
+
+            const i = Object.keys(grafo).length;
+
+            posiciones[nombre] = [
+                150 + (i % 5) * 150,
+                150 + (i % 3) * 140
+            ];
+
+            cambiarDatos();
+        }
+    );
+}
+
+function formRenombrar() {
+    if (!Object.keys(grafo).length) return;
+
+    abrirModal(
+        "Renombrar estado",
+        [
+            campoEstado("anterior", "Estado"),
+            {id: "nuevo", label: "Nuevo nombre"}
+        ],
+        datos => {
+            const a = datos.anterior;
+            const b = datos.nuevo;
+
+            if (!b || b.length > 40 ||
+                nombreExiste(b, a) ||
+                ["__proto__", "constructor", "prototype"].includes(b)) {
+                alert("Nombre inválido o duplicado.");
+                return false;
+            }
+
+            if (a === b) return;
+
+            grafo[b] = grafo[a];
+            delete grafo[a];
+
+            for (const vecinos of Object.values(grafo)) {
+                if (Object.hasOwn(vecinos, a)) {
+                    vecinos[b] = vecinos[a];
+                    delete vecinos[a];
+                }
+            }
+
+            posiciones[b] = posiciones[a];
+            delete posiciones[a];
+
+            if (document.getElementById("inicio").value === a) {
+                document.getElementById("inicio").value = b;
+            }
+
+            cambiarDatos();
+        }
+    );
+}
+
+function formEliminarEstado() {
+    if (!Object.keys(grafo).length) return;
+
+    abrirModal(
+        "Eliminar estado",
+        [campoEstado("nombre", "Estado a eliminar")],
+        datos => {
+            const nombre = datos.nombre;
+
+            if (!confirm(
+                `¿Eliminar ${nombre} y todas sus conexiones?`
+            )) return false;
+
+            delete grafo[nombre];
+            delete posiciones[nombre];
+
+            for (const vecinos of Object.values(grafo)) {
+                delete vecinos[nombre];
+            }
+
+            cambiarDatos();
+        }
+    );
+}
+
+function opcionesConexion() {
+    if (Object.keys(grafo).length < 2) {
+        alert("Necesitas al menos dos estados.");
+        return false;
+    }
+
+    return true;
+}
+
+function distanciaValida(valor) {
+    const numero = Number(valor);
+
+    return Number.isSafeInteger(numero) &&
+           numero >= 1 && numero <= 10000000;
+}
+
+function formConexion() {
+    if (!opcionesConexion()) return;
+
+    abrirModal(
+        "Crear conexión",
+        [
+            campoEstado("a", "Estado de origen"),
+            campoEstado("b", "Estado de destino"),
+            {id: "km", label: "Distancia en kilómetros", tipo: "number", valor: 100}
+        ],
+        datos => {
+            const {a, b, km} = datos;
+
+            if (a === b) {
+                alert("Selecciona estados diferentes.");
+                return false;
+            }
+
+            if (Object.hasOwn(grafo[a], b)) {
+                alert("La conexión ya existe.");
+                return false;
+            }
+
+            if (!distanciaValida(km)) {
+                alert("Introduce una distancia entera positiva.");
+                return false;
+            }
+
+            grafo[a][b] = Number(km);
+            grafo[b][a] = Number(km);
+
+            cambiarDatos();
+        }
+    );
+}
+
+function formEditarConexion() {
+    if (!opcionesConexion()) return;
+
+    abrirModal(
+        "Editar distancia",
+        [
+            campoEstado("a", "Primer estado"),
+            campoEstado("b", "Segundo estado"),
+            {id: "km", label: "Nueva distancia (km)", tipo: "number", valor: 100}
+        ],
+        datos => {
+            const {a, b, km} = datos;
+
+            if (a === b || !Object.hasOwn(grafo[a], b)) {
+                alert("Esa conexión no existe.");
+                return false;
+            }
+
+            if (!distanciaValida(km)) {
+                alert("Introduce una distancia entera positiva.");
+                return false;
+            }
+
+            grafo[a][b] = Number(km);
+            grafo[b][a] = Number(km);
+
+            cambiarDatos();
+        }
+    );
+}
+
+function formEliminarConexion() {
+    if (!opcionesConexion()) return;
+
+    abrirModal(
+        "Eliminar conexión",
+        [
+            campoEstado("a", "Primer estado"),
+            campoEstado("b", "Segundo estado")
+        ],
+        datos => {
+            const {a, b} = datos;
+
+            if (a === b || !Object.hasOwn(grafo[a], b)) {
+                alert("No existe esa conexión.");
+                return false;
+            }
+
+            if (!confirm(`¿Eliminar la conexión ${a} ↔ ${b}?`)) {
+                return false;
+            }
+
+            delete grafo[a][b];
+            delete grafo[b][a];
+
+            cambiarDatos();
+        }
+    );
+}
+
+// =====================================================
+// MAPA INTERACTIVO SVG
+// =====================================================
+
+const NS = "http://www.w3.org/2000/svg";
+
+function crearSVG(tipo, atributos = {}, texto = "") {
+    const elemento = document.createElementNS(NS, tipo);
+
+    for (const [clave, valor] of Object.entries(atributos)) {
+        elemento.setAttribute(clave, valor);
+    }
+
+    if (texto !== "") {
+        elemento.textContent = texto;
+    }
+
+    return elemento;
+}
+
+function aplicarVista() {
+    svg.setAttribute(
+        "viewBox",
+        `${vista.x} ${vista.y} ${vista.w} ${vista.h}`
+    );
+}
+
+function puntoSVG(evento) {
+    const punto = svg.createSVGPoint();
+    punto.x = evento.clientX;
+    punto.y = evento.clientY;
+
+    const matriz = svg.getScreenCTM();
+
+    if (!matriz) return {x: 0, y: 0};
+
+    return punto.matrixTransform(matriz.inverse());
+}
+
+function dibujar() {
+    aplicarVista();
+    svg.replaceChildren();
+
+    // Fondo
+    svg.appendChild(crearSVG("rect", {
+        x: -10000,
+        y: -10000,
+        width: 20000,
+        height: 20000,
+        fill: "#eaf4f6"
+    }));
+
+    // Cuadrícula tenue
+    for (let x = -1000; x <= 2000; x += 80) {
+        svg.appendChild(crearSVG("line", {
+            x1: x, y1: -1000,
+            x2: x, y2: 2000,
+            stroke: "#d6e6ea",
+            "stroke-width": 1
+        }));
+    }
+
+    for (let y = -1000; y <= 2000; y += 80) {
+        svg.appendChild(crearSVG("line", {
+            x1: -1000, y1: y,
+            x2: 2000, y2: y,
+            stroke: "#d6e6ea",
+            "stroke-width": 1
+        }));
+    }
+
+    const activas = new Set();
+
+    for (let i = 0; i < rutaActual.length - 1; i++) {
+        activas.add(
+            [rutaActual[i], rutaActual[i + 1]]
+                .sort().join("\u0000")
+        );
+    }
+
+    // Aristas
+    for (const [a, b, km] of relaciones()) {
+        const [x1, y1] = posiciones[a];
+        const [x2, y2] = posiciones[b];
+
+        const activa = activas.has([a, b].sort().join("\u0000"));
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+
+        svg.appendChild(crearSVG("line", {
+            x1, y1, x2, y2,
+            stroke: activa ? "#18a47e" : "#9ab0bd",
+            "stroke-width": activa ? 7 : 3,
+            "stroke-linecap": "round"
+        }));
+
+        // Fondo del peso
+        svg.appendChild(crearSVG("rect", {
+            x: mx - 39,
+            y: my - 14,
+            width: 78,
+            height: 28,
+            rx: 8,
+            fill: "#ffffff",
+            stroke: "#c7d7df"
+        }));
+
+        svg.appendChild(crearSVG("text", {
+            x: mx,
+            y: my + 5,
+            "text-anchor": "middle",
+            "font-size": 13,
+            "font-weight": 700,
+            fill: "#17446c"
+        }, `${km} km`));
+    }
+
+    // Estados
+    for (const [nombre, [x, y]] of Object.entries(posiciones)) {
+        const visitado = rutaActual.includes(nombre);
+        const actual = rutaActual.at(-1) === nombre;
+
+        const color = actual
+            ? "#f1ac3d"
+            : visitado
+                ? "#20aa83"
+                : "#458bd4";
+
+        const grupo = crearSVG("g", {
+            "data-estado": nombre,
+            style: "cursor:move"
+        });
+
+        grupo.appendChild(crearSVG("circle", {
+            cx: x,
+            cy: y + 3,
+            r: 27,
+            fill: "#18354b",
+            opacity: .18
+        }));
+
+        grupo.appendChild(crearSVG("circle", {
+            cx: x,
+            cy: y,
+            r: 24,
+            fill: color,
+            stroke: "#ffffff",
+            "stroke-width": 4
+        }));
+
+        const visitas = rutaActual
+            .map((e, i) => e === nombre ? i + 1 : null)
+            .filter(e => e !== null);
+
+        grupo.appendChild(crearSVG("text", {
+            x,
+            y: y + 5,
+            "text-anchor": "middle",
+            "font-size": 14,
+            "font-weight": 800,
+            fill: "#ffffff"
+        }, visitas.length ? visitas.join(",") : "●"));
+
+        const anchoEtiqueta = Math.max(
+            85, nombre.length * 8.2 + 22
+        );
+
+        grupo.appendChild(crearSVG("rect", {
+            x: x - anchoEtiqueta / 2,
+            y: y + 32,
+            width: anchoEtiqueta,
+            height: 26,
+            rx: 9,
+            fill: "#ffffff",
+            stroke: "#d1dde5"
+        }));
+
+        grupo.appendChild(crearSVG("text", {
+            x,
+            y: y + 49,
+            "text-anchor": "middle",
+            "font-size": 13,
+            "font-weight": 700,
+            fill: "#183047"
+        }, nombre));
+
+        grupo.addEventListener("pointerdown", evento => {
+            evento.stopPropagation();
+            arrastrando = nombre;
+            svg.setPointerCapture(evento.pointerId);
+        });
+
+        svg.appendChild(grupo);
+    }
+
+    if (!Object.keys(grafo).length) {
+        svg.appendChild(crearSVG("text", {
+            x: 500,
+            y: 320,
+            "text-anchor": "middle",
+            "font-size": 23,
+            fill: "#557083"
+        }, "Agrega un estado para comenzar"));
+    }
+}
+
+// Arrastre de estados
+svg.addEventListener("pointermove", evento => {
+    const p = puntoSVG(evento);
+
+    if (arrastrando !== null) {
+        posiciones[arrastrando] = [p.x, p.y];
+        dibujar();
+    } else if (movimientoMapa !== null) {
+        const dx = p.x - movimientoMapa.x;
+        const dy = p.y - movimientoMapa.y;
+
+        vista.x -= dx;
+        vista.y -= dy;
+
+        aplicarVista();
+    }
+});
+
+// Movimiento del mapa
+svg.addEventListener("pointerdown", evento => {
+    if (arrastrando !== null) return;
+
+    movimientoMapa = puntoSVG(evento);
+    svg.setPointerCapture(evento.pointerId);
+});
+
+function soltar() {
+    if (arrastrando !== null) persistir();
+
+    arrastrando = null;
+    movimientoMapa = null;
+}
+
+svg.addEventListener("pointerup", soltar);
+svg.addEventListener("pointercancel", soltar);
+svg.addEventListener("lostpointercapture", soltar);
+
+function zoom(factor) {
+    const nuevoW = Math.min(4000, Math.max(180, vista.w * factor));
+    const nuevoH = vista.h * (nuevoW / vista.w);
+
+    vista.x += (vista.w - nuevoW) / 2;
+    vista.y += (vista.h - nuevoH) / 2;
+
+    vista.w = nuevoW;
+    vista.h = nuevoH;
+
+    aplicarVista();
+}
+
+function resetVista() {
+    vista = {x: 0, y: 0, w: 1000, h: 650};
+    aplicarVista();
+}
+
+svg.addEventListener("wheel", evento => {
+    evento.preventDefault();
+    zoom(evento.deltaY < 0 ? 0.9 : 1.1);
+}, {passive: false});
+
+// =====================================================
+// EXPORTAR E IMPORTAR
+// =====================================================
+
+function descargar(nombre, contenido, tipo) {
+    const blob = new Blob([contenido], {type: tipo});
+    const url = URL.createObjectURL(blob);
+
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = nombre;
+    enlace.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function guardarJSON() {
+    const datos = {grafo, posiciones};
+
+    descargar(
+        "ADA7_Grafo.json",
+        JSON.stringify(datos, null, 2),
+        "application/json"
+    );
+}
+
+async function abrirJSON(evento) {
+    const archivo = evento.target.files[0];
+
+    if (!archivo) return;
+
+    try {
+        if (archivo.size > 1000000) {
+            throw new Error("Archivo demasiado grande");
+        }
+
+        const datos = JSON.parse(await archivo.text());
+
+        validarDatos(datos);
+
+        grafo = datos.grafo;
+        posiciones = datos.posiciones;
+
+        cambiarDatos();
+
+        document.getElementById("estado").textContent =
+            "Grafo importado correctamente.";
+    } catch (error) {
+        alert("No se pudo abrir el archivo: " + error.message);
+    }
+
+    evento.target.value = "";
+}
+
+function exportarSVG() {
+    const copia = svg.cloneNode(true);
+
+    copia.setAttribute("xmlns", NS);
+    copia.setAttribute("width", "1000");
+    copia.setAttribute("height", "650");
+
+    descargar(
+        "ADA7_Grafo.svg",
+        new XMLSerializer().serializeToString(copia),
+        "image/svg+xml"
+    );
+}
+
+// =====================================================
+// INICIAR APLICACIÓN
+// =====================================================
+
+inicializar();
+
+</script>
+</body>
+</html>
