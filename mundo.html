@@ -1,0 +1,2614 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADA8 - Explorador Mundial de Grafos</title>
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+:root {
+    --bg:#0b1220;
+    --panel:#17243a;
+    --card:#223550;
+    --text:#f1f5f9;
+    --muted:#afc0d5;
+    --border:#354961;
+    --blue:#69adfa;
+    --green:#38d3a1;
+    --yellow:#ffca69;
+    --red:#ff929f;
+}
+
+* { box-sizing:border-box; }
+
+body {
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",Arial,sans-serif;
+}
+
+header {
+    padding:20px 25px;
+    background:#0a1120;
+}
+
+h1 {
+    margin:0;
+    font-size:28px;
+}
+
+header p {
+    color:var(--muted);
+    margin:8px 0 0;
+}
+
+.toolbar {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:9px;
+    padding:12px 20px;
+    background:var(--panel);
+    border-top:1px solid var(--border);
+}
+
+button,input,select {
+    padding:10px 12px;
+    border-radius:9px;
+    border:1px solid var(--border);
+    font-size:13px;
+}
+
+button {
+    background:var(--blue);
+    color:#102139;
+    font-weight:700;
+    cursor:pointer;
+}
+
+button:hover {
+    filter:brightness(1.1);
+}
+
+button:disabled {
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+input,select {
+    background:white;
+    color:#182538;
+}
+
+select {
+    max-width:330px;
+}
+
+.green { background:var(--green); }
+.yellow { background:var(--yellow); }
+.red { background:var(--red); }
+.gray { background:#c1cfe0; }
+
+.field {
+    display:flex;
+    gap:8px;
+    align-items:center;
+}
+
+.stats {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+    margin:16px 20px;
+}
+
+.stat,.panel {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:13px;
+}
+
+.stat {
+    padding:15px;
+}
+
+.stat small {
+    color:var(--muted);
+}
+
+.stat strong {
+    display:block;
+    margin-top:8px;
+    font-size:24px;
+    overflow-wrap:anywhere;
+}
+
+.layout {
+    display:grid;
+    grid-template-columns:minmax(0,1.8fr) minmax(320px,1fr);
+    gap:14px;
+    padding:0 20px 20px;
+}
+
+.panel {
+    padding:14px;
+    min-width:0;
+}
+
+.panel h2 {
+    margin:0 0 12px;
+    font-size:19px;
+}
+
+#map {
+    height:600px;
+    border-radius:10px;
+    background:#dbeafe;
+}
+
+#results {
+    height:600px;
+    overflow-y:auto;
+    padding-right:3px;
+}
+
+.card {
+    background:var(--card);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:10px;
+    overflow-wrap:anywhere;
+}
+
+.card h3 {
+    margin:0 0 9px;
+    font-size:16px;
+}
+
+.card p {
+    line-height:1.6;
+    margin:7px 0;
+}
+
+.actions {
+    display:flex;
+    flex-wrap:wrap;
+    gap:7px;
+    margin-top:10px;
+}
+
+.actions button {
+    padding:8px 10px;
+}
+
+.muted {
+    color:var(--muted);
+    font-size:12px;
+}
+
+.total {
+    color:var(--green);
+    font-size:26px;
+    font-weight:800;
+}
+
+.step {
+    background:var(--card);
+    padding:12px;
+    border-left:4px solid var(--green);
+    border-radius:0 9px 9px 0;
+    margin:9px 0;
+}
+
+.scroll {
+    overflow:auto;
+    max-width:100%;
+}
+
+table {
+    border-collapse:collapse;
+    font-size:12px;
+}
+
+td,th {
+    border:1px solid #516a86;
+    padding:8px;
+    text-align:center;
+}
+
+th {
+    background:#304761;
+}
+
+#status {
+    padding:7px 24px 20px;
+    color:var(--muted);
+}
+
+.legend {
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+    margin-top:12px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.dot {
+    display:inline-block;
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    margin-right:4px;
+}
+
+@media(max-width:1100px) {
+    .layout {
+        grid-template-columns:1fr;
+    }
+
+    #map,#results {
+        height:470px;
+    }
+}
+
+@media(max-width:650px) {
+    .stats {
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .layout {
+        padding:0 10px 12px;
+    }
+
+    .toolbar {
+        padding:10px;
+    }
+
+    .field {
+        flex-wrap:wrap;
+    }
+
+    h1 {
+        font-size:22px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🌍 ADA8 · Explorador Mundial de Grafos</h1>
+    <p>
+        Unidad 4 · Estructuras No Lineales ·
+        Dijkstra · Floyd-Warshall · Warshall · Kruskal
+    </p>
+</header>
+
+<!-- BUSCADOR -->
+
+<section class="toolbar">
+
+    <input
+        id="search"
+        type="search"
+        placeholder="Buscar país o capital..."
+        autocomplete="off"
+        style="width:290px"
+    >
+
+    <select id="searchMode">
+        <option value="from">Buscar origen</option>
+        <option value="to">Buscar destino</option>
+    </select>
+
+    <select id="continent">
+        <option value="">Todos los continentes</option>
+        <option value="Americas">América</option>
+        <option value="Europe">Europa</option>
+        <option value="Asia">Asia</option>
+        <option value="Africa">África</option>
+        <option value="Oceania">Oceanía</option>
+    </select>
+
+    <button class="gray" onclick="showCatalog()">
+        Catálogo mundial
+    </button>
+
+    <button class="gray" onclick="showWorld()">
+        Ver mundo
+    </button>
+
+    <button class="gray" onclick="clearSearch()">
+        Limpiar búsqueda
+    </button>
+
+    <span id="searchInfo" class="muted"></span>
+
+</section>
+
+<!-- ORIGEN Y DESTINO -->
+
+<section class="toolbar">
+
+    <div class="field">
+        <label for="from">Origen:</label>
+        <select id="from"></select>
+    </div>
+
+    <div class="field">
+        <label for="to">Destino:</label>
+        <select id="to"></select>
+    </div>
+
+    <button class="green" onclick="addSelected()">
+        + Añadir capitales
+    </button>
+
+    <button class="green" onclick="addConnection()">
+        + Conexión
+    </button>
+
+    <button class="green" onclick="connectAll()">
+        Conectar automáticamente
+    </button>
+
+    <button class="yellow" onclick="editConnection()">
+        Editar km
+    </button>
+
+    <button class="red" onclick="deleteConnection()">
+        − Conexión
+    </button>
+
+    <button class="red" onclick="deletePlace()">
+        − Lugar
+    </button>
+
+    <button class="gray" id="customButton"
+        onclick="toggleCustom()">
+        + Lugar personalizado
+    </button>
+
+</section>
+
+<!-- ALGORITMOS -->
+
+<section class="toolbar">
+
+    <button onclick="runDijkstra()">
+        Dijkstra
+    </button>
+
+    <button onclick="runFloyd()">
+        Floyd-Warshall
+    </button>
+
+    <button class="yellow" onclick="runWarshall()">
+        Warshall
+    </button>
+
+    <button class="green" onclick="runKruskal()">
+        Kruskal
+    </button>
+
+    <button onclick="compareAlgorithms()">
+        Comparar
+    </button>
+
+    <button class="gray" onclick="showConnections()">
+        Relaciones
+    </button>
+
+    <button class="gray" onclick="showAdjacency()">
+        Matriz de adyacencia
+    </button>
+
+    <button class="gray" onclick="exportJSON()">
+        Exportar JSON
+    </button>
+
+    <button class="gray"
+        onclick="document.getElementById('file').click()">
+        Importar JSON
+    </button>
+
+    <button class="red" onclick="clearGraph()">
+        Vaciar grafo
+    </button>
+
+    <input
+        id="file"
+        type="file"
+        accept=".json"
+        hidden
+        onchange="importJSON(event)"
+    >
+
+</section>
+
+<!-- ESTADÍSTICAS -->
+
+<section class="stats">
+
+    <div class="stat">
+        <small>Capitales disponibles</small>
+        <strong id="capitalCount">0</strong>
+    </div>
+
+    <div class="stat">
+        <small>Coincidencias</small>
+        <strong id="matchCount">0</strong>
+    </div>
+
+    <div class="stat">
+        <small>Lugares del grafo</small>
+        <strong id="graphCount">0</strong>
+    </div>
+
+    <div class="stat">
+        <small>Conexiones</small>
+        <strong id="edgeCount">0</strong>
+    </div>
+
+</section>
+
+<main class="layout">
+
+    <section class="panel">
+        <h2>Mapa mundial interactivo</h2>
+
+        <div id="map"></div>
+
+        <div class="legend">
+            <span>
+                <i class="dot" style="background:#2563eb"></i>
+                Capital disponible
+            </span>
+            <span>
+                <i class="dot" style="background:#12b981"></i>
+                Lugar del grafo
+            </span>
+            <span>
+                <i class="dot" style="background:#ef923c"></i>
+                Conexión
+            </span>
+            <span>
+                <i class="dot" style="background:#00b889"></i>
+                Resultado
+            </span>
+        </div>
+
+        <p class="muted">
+            Las conexiones representan enlaces matemáticos del grafo.
+            Las distancias sugeridas son aproximaciones en línea recta.
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2>Resultados e itinerario</h2>
+        <div id="results"></div>
+    </section>
+
+</main>
+
+<div id="status">Iniciando aplicación...</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+"use strict";
+
+// =====================================================
+// CATÁLOGO DE CAPITALES DEL MUNDO
+// País | Capital | Continente | Latitud | Longitud
+// =====================================================
+
+const DATA = `
+Afganistán|Kabul|Asia|34.53|69.18
+Albania|Tirana|Europe|41.33|19.82
+Alemania|Berlín|Europe|52.52|13.40
+Andorra|Andorra la Vieja|Europe|42.51|1.52
+Angola|Luanda|Africa|-8.84|13.23
+Antigua y Barbuda|Saint John's|Americas|17.12|-61.85
+Arabia Saudita|Riad|Asia|24.71|46.68
+Argelia|Argel|Africa|36.75|3.06
+Argentina|Buenos Aires|Americas|-34.60|-58.38
+Armenia|Ereván|Asia|40.18|44.51
+Australia|Canberra|Oceania|-35.28|149.13
+Austria|Viena|Europe|48.21|16.37
+Azerbaiyán|Bakú|Asia|40.41|49.87
+Bahamas|Nasáu|Americas|25.06|-77.35
+Baréin|Manama|Asia|26.23|50.59
+Bangladés|Daca|Asia|23.81|90.41
+Barbados|Bridgetown|Americas|13.10|-59.62
+Bélgica|Bruselas|Europe|50.85|4.35
+Belice|Belmopán|Americas|17.25|-88.77
+Benín|Porto Novo|Africa|6.50|2.63
+Bielorrusia|Minsk|Europe|53.90|27.57
+Bolivia|Sucre|Americas|-19.05|-65.26
+Bosnia y Herzegovina|Sarajevo|Europe|43.85|18.36
+Botsuana|Gaborone|Africa|-24.65|25.91
+Brasil|Brasilia|Americas|-15.79|-47.88
+Brunéi|Bandar Seri Begawan|Asia|4.89|114.94
+Bulgaria|Sofía|Europe|42.70|23.32
+Burkina Faso|Uagadugú|Africa|12.37|-1.52
+Burundi|Gitega|Africa|-3.43|29.93
+Bután|Timbu|Asia|27.47|89.64
+Cabo Verde|Praia|Africa|14.92|-23.51
+Camboya|Nom Pen|Asia|11.56|104.93
+Camerún|Yaundé|Africa|3.87|11.52
+Canadá|Ottawa|Americas|45.42|-75.70
+Catar|Doha|Asia|25.29|51.53
+Chad|Yamena|Africa|12.13|15.06
+Chile|Santiago|Americas|-33.45|-70.67
+China|Pekín|Asia|39.90|116.41
+Chipre|Nicosia|Europe|35.17|33.36
+Colombia|Bogotá|Americas|4.71|-74.07
+Comoras|Moroni|Africa|-11.70|43.25
+Congo|Brazzaville|Africa|-4.27|15.28
+Corea del Norte|Pionyang|Asia|39.02|125.75
+Corea del Sur|Seúl|Asia|37.57|126.98
+Costa de Marfil|Yamusukro|Africa|6.82|-5.28
+Costa Rica|San José|Americas|9.93|-84.08
+Croacia|Zagreb|Europe|45.81|15.98
+Cuba|La Habana|Americas|23.11|-82.37
+Dinamarca|Copenhague|Europe|55.68|12.57
+Dominica|Roseau|Americas|15.30|-61.39
+Ecuador|Quito|Americas|-0.18|-78.47
+Egipto|El Cairo|Africa|30.04|31.24
+El Salvador|San Salvador|Americas|13.69|-89.19
+Emiratos Árabes Unidos|Abu Dabi|Asia|24.45|54.37
+Eritrea|Asmara|Africa|15.34|38.93
+Eslovaquia|Bratislava|Europe|48.15|17.11
+Eslovenia|Liubliana|Europe|46.05|14.51
+España|Madrid|Europe|40.42|-3.70
+Estados Unidos|Washington D. C.|Americas|38.90|-77.04
+Estonia|Tallin|Europe|59.44|24.75
+Esuatini|Mbabane|Africa|-26.32|31.14
+Etiopía|Adís Abeba|Africa|9.03|38.74
+Filipinas|Manila|Asia|14.60|120.98
+Finlandia|Helsinki|Europe|60.17|24.94
+Fiyi|Suva|Oceania|-18.14|178.44
+Francia|París|Europe|48.86|2.35
+Gabón|Libreville|Africa|0.39|9.45
+Gambia|Banjul|Africa|13.45|-16.58
+Georgia|Tiflis|Asia|41.72|44.79
+Ghana|Acra|Africa|5.56|-0.20
+Granada|Saint George's|Americas|12.06|-61.75
+Grecia|Atenas|Europe|37.98|23.73
+Guatemala|Ciudad de Guatemala|Americas|14.63|-90.51
+Guinea|Conakri|Africa|9.64|-13.58
+Guinea-Bisáu|Bisáu|Africa|11.86|-15.60
+Guinea Ecuatorial|Ciudad de la Paz|Africa|1.58|10.47
+Guyana|Georgetown|Americas|6.80|-58.16
+Haití|Puerto Príncipe|Americas|18.54|-72.34
+Honduras|Tegucigalpa|Americas|14.08|-87.21
+Hungría|Budapest|Europe|47.50|19.04
+India|Nueva Delhi|Asia|28.61|77.21
+Indonesia|Yakarta|Asia|-6.21|106.85
+Irak|Bagdad|Asia|33.31|44.37
+Irán|Teherán|Asia|35.69|51.39
+Irlanda|Dublín|Europe|53.35|-6.26
+Islandia|Reikiavik|Europe|64.15|-21.94
+Islas Marshall|Majuro|Oceania|7.09|171.38
+Islas Salomón|Honiara|Oceania|-9.43|159.95
+Israel|Jerusalén|Asia|31.78|35.22
+Italia|Roma|Europe|41.90|12.50
+Jamaica|Kingston|Americas|17.98|-76.79
+Japón|Tokio|Asia|35.68|139.69
+Jordania|Amán|Asia|31.95|35.93
+Kazajistán|Astaná|Asia|51.17|71.45
+Kenia|Nairobi|Africa|-1.29|36.82
+Kirguistán|Biskek|Asia|42.87|74.60
+Kiribati|Tarawa del Sur|Oceania|1.33|172.98
+Kosovo|Pristina|Europe|42.66|21.16
+Kuwait|Ciudad de Kuwait|Asia|29.38|47.98
+Laos|Vientián|Asia|17.97|102.63
+Lesoto|Maseru|Africa|-29.32|27.48
+Letonia|Riga|Europe|56.95|24.11
+Líbano|Beirut|Asia|33.89|35.50
+Liberia|Monrovia|Africa|6.31|-10.80
+Libia|Trípoli|Africa|32.89|13.19
+Liechtenstein|Vaduz|Europe|47.14|9.52
+Lituania|Vilna|Europe|54.69|25.28
+Luxemburgo|Luxemburgo|Europe|49.61|6.13
+Macedonia del Norte|Skopie|Europe|42.00|21.43
+Madagascar|Antananarivo|Africa|-18.91|47.52
+Malasia|Kuala Lumpur|Asia|3.14|101.69
+Malaui|Lilongüe|Africa|-13.96|33.77
+Maldivas|Malé|Asia|4.18|73.51
+Malí|Bamako|Africa|12.64|-8.00
+Malta|La Valeta|Europe|35.90|14.51
+Marruecos|Rabat|Africa|34.02|-6.84
+Mauricio|Port Louis|Africa|-20.16|57.50
+Mauritania|Nuakchot|Africa|18.09|-15.98
+México|Ciudad de México|Americas|19.43|-99.13
+Micronesia|Palikir|Oceania|6.92|158.16
+Moldavia|Chisináu|Europe|47.01|28.86
+Mónaco|Mónaco|Europe|43.73|7.42
+Mongolia|Ulán Bator|Asia|47.92|106.92
+Montenegro|Podgorica|Europe|42.44|19.26
+Mozambique|Maputo|Africa|-25.97|32.58
+Myanmar|Naipyidó|Asia|19.76|96.08
+Namibia|Windhoek|Africa|-22.57|17.08
+Nauru|Yaren|Oceania|-0.55|166.92
+Nepal|Katmandú|Asia|27.72|85.32
+Nicaragua|Managua|Americas|12.14|-86.25
+Níger|Niamey|Africa|13.51|2.11
+Nigeria|Abuya|Africa|9.06|7.49
+Noruega|Oslo|Europe|59.91|10.75
+Nueva Zelanda|Wellington|Oceania|-41.29|174.78
+Omán|Mascate|Asia|23.59|58.41
+Países Bajos|Ámsterdam|Europe|52.37|4.90
+Pakistán|Islamabad|Asia|33.69|73.06
+Palaos|Ngerulmud|Oceania|7.50|134.62
+Palestina|Ramala|Asia|31.90|35.20
+Panamá|Ciudad de Panamá|Americas|8.98|-79.52
+Papúa Nueva Guinea|Puerto Moresby|Oceania|-9.44|147.18
+Paraguay|Asunción|Americas|-25.29|-57.64
+Perú|Lima|Americas|-12.05|-77.04
+Polonia|Varsovia|Europe|52.23|21.01
+Portugal|Lisboa|Europe|38.72|-9.14
+Reino Unido|Londres|Europe|51.51|-0.13
+República Centroafricana|Bangui|Africa|4.37|18.56
+República Checa|Praga|Europe|50.08|14.42
+República Democrática del Congo|Kinsasa|Africa|-4.32|15.31
+República Dominicana|Santo Domingo|Americas|18.49|-69.93
+Ruanda|Kigali|Africa|-1.95|30.06
+Rumania|Bucarest|Europe|44.43|26.10
+Rusia|Moscú|Europe|55.75|37.62
+Samoa|Apia|Oceania|-13.83|-171.75
+San Cristóbal y Nieves|Basseterre|Americas|17.30|-62.72
+San Marino|San Marino|Europe|43.94|12.45
+San Vicente y las Granadinas|Kingstown|Americas|13.16|-61.23
+Santa Lucía|Castries|Americas|14.01|-60.99
+Santo Tomé y Príncipe|Santo Tomé|Africa|0.34|6.73
+Senegal|Dakar|Africa|14.69|-17.45
+Serbia|Belgrado|Europe|44.82|20.46
+Seychelles|Victoria|Africa|-4.62|55.45
+Sierra Leona|Freetown|Africa|8.48|-13.23
+Singapur|Singapur|Asia|1.35|103.82
+Siria|Damasco|Asia|33.51|36.29
+Somalia|Mogadiscio|Africa|2.05|45.32
+Sri Lanka|Sri Jayawardenepura Kotte|Asia|6.89|79.90
+Sudáfrica|Pretoria|Africa|-25.75|28.19
+Sudán|Jartum|Africa|15.59|32.53
+Sudán del Sur|Yuba|Africa|4.85|31.58
+Suecia|Estocolmo|Europe|59.33|18.07
+Suiza|Berna|Europe|46.95|7.45
+Surinam|Paramaribo|Americas|5.87|-55.17
+Tailandia|Bangkok|Asia|13.76|100.50
+Taiwán|Taipéi|Asia|25.03|121.56
+Tanzania|Dodoma|Africa|-6.16|35.75
+Tayikistán|Dusambé|Asia|38.56|68.79
+Timor Oriental|Dili|Asia|-8.56|125.57
+Togo|Lomé|Africa|6.13|1.22
+Tonga|Nukualofa|Oceania|-21.14|-175.20
+Trinidad y Tobago|Puerto España|Americas|10.66|-61.52
+Túnez|Túnez|Africa|36.81|10.18
+Turkmenistán|Asjabad|Asia|37.96|58.33
+Turquía|Ankara|Asia|39.93|32.86
+Tuvalu|Funafuti|Oceania|-8.52|179.20
+Ucrania|Kiev|Europe|50.45|30.52
+Uganda|Kampala|Africa|0.35|32.58
+Uruguay|Montevideo|Americas|-34.90|-56.16
+Uzbekistán|Taskent|Asia|41.30|69.24
+Vanuatu|Port Vila|Oceania|-17.74|168.32
+Vaticano|Ciudad del Vaticano|Europe|41.90|12.45
+Venezuela|Caracas|Americas|10.49|-66.90
+Vietnam|Hanói|Asia|21.03|105.85
+Yemen|Saná|Asia|15.35|44.21
+Yibuti|Yibuti|Africa|11.59|43.15
+Zambia|Lusaka|Africa|-15.42|28.28
+Zimbabue|Harare|Africa|-17.83|31.05
+`;
+
+// =====================================================
+// VARIABLES
+// =====================================================
+
+const atlas = DATA.trim().split("\n").map((line, i) => {
+    const [country, name, region, lat, lng] = line.split("|");
+
+    return {
+        id: "CAP" + i,
+        country,
+        name,
+        region,
+        lat: Number(lat),
+        lng: Number(lng)
+    };
+});
+
+const $ = id => document.getElementById(id);
+
+const STORAGE_KEY = "ADA8_GRAFOS_MUNDO_INTEGRADO_V1";
+
+let graph = new Map();
+let connections = [];
+
+let activePath = [];
+let selectedEdges = [];
+
+let customMode = false;
+let searchTimer = null;
+
+// =====================================================
+// MAPA MUNDIAL LEAFLET
+// =====================================================
+
+const map = L.map("map", {
+    worldCopyJump: true,
+    minZoom: 2
+}).setView([18, 0], 2);
+
+L.tileLayer(
+    "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+        maxZoom: 19,
+        attribution: "© OpenStreetMap contributors"
+    }
+).addTo(map);
+
+const capitalsLayer = L.layerGroup().addTo(map);
+const nodesLayer = L.layerGroup().addTo(map);
+const edgesLayer = L.layerGroup().addTo(map);
+const routesLayer = L.layerGroup().addTo(map);
+
+// =====================================================
+// FUNCIONES AUXILIARES
+// =====================================================
+
+function esc(value) {
+    return String(value).replace(/[&<>"']/g, c => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[c]);
+}
+
+function card(title, body) {
+    return `
+        <article class="card">
+            <h3>${esc(title)}</h3>
+            ${body}
+        </article>
+    `;
+}
+
+function status(message) {
+    $("status").textContent = message;
+}
+
+function setResults(html) {
+    $("results").innerHTML = html;
+}
+
+function fmt(n) {
+    return Number(n).toLocaleString("es-MX", {
+        maximumFractionDigits: 1
+    });
+}
+
+function updateStats() {
+    $("capitalCount").textContent = atlas.length;
+    $("graphCount").textContent = graph.size;
+    $("edgeCount").textContent = connections.length;
+}
+
+function resetRoutes() {
+    activePath = [];
+    selectedEdges = [];
+    routesLayer.clearLayers();
+}
+
+function norm(text) {
+    return String(text ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function showWorld() {
+    map.setView([18, 0], 2);
+}
+
+// =====================================================
+// BUSCADOR INTELIGENTE
+// =====================================================
+
+const ALIAS = {
+    "reino unido": [
+        "inglaterra", "gran bretaña", "uk",
+        "england", "britain", "united kingdom", "london"
+    ],
+    "estados unidos": [
+        "usa", "eeuu", "ee uu", "us",
+        "united states", "america", "washington dc"
+    ],
+    "mexico": [
+        "cdmx", "df", "mexico city",
+        "ciudad de mexico"
+    ],
+    "japon": ["japan", "tokyo", "tokio"],
+    "alemania": ["germany", "deutschland", "berlin"],
+    "francia": ["france", "paris"],
+    "espana": ["spain"],
+    "china": ["beijing", "peking", "pekin"],
+    "rusia": ["russia", "moscow", "moscu"],
+    "brasil": ["brazil", "brasilia"],
+    "corea del sur": ["south korea", "seoul", "seul"],
+    "corea del norte": ["north korea", "pyongyang"],
+    "italia": ["italy", "rome"],
+    "canada": ["ottawa"],
+    "egipto": ["egypt", "cairo"],
+    "india": ["new delhi"],
+    "turquia": ["turkey", "turkiye"],
+    "paises bajos": ["holanda", "holland", "netherlands"],
+    "suiza": ["switzerland", "bern"],
+    "portugal": ["lisbon"],
+    "grecia": ["greece", "athens"],
+    "suecia": ["sweden", "stockholm"],
+    "dinamarca": ["denmark", "copenhagen"],
+    "irlanda": ["ireland", "dublin"],
+    "nueva zelanda": ["new zealand"],
+    "sudafrica": ["south africa"],
+    "colombia": ["columbia", "bogota"],
+    "australia": ["canberra"],
+    "argentina": ["buenos aires"]
+};
+
+const CAPITAL_ALIAS = {
+    "londres": ["london"],
+    "tokio": ["tokyo"],
+    "pekin": ["beijing", "peking"],
+    "nueva delhi": ["new delhi"],
+    "ciudad de mexico": ["mexico city", "cdmx"],
+    "la habana": ["havana"],
+    "el cairo": ["cairo"],
+    "moscu": ["moscow"],
+    "roma": ["rome"],
+    "varsovia": ["warsaw"],
+    "lisboa": ["lisbon"],
+    "seul": ["seoul"],
+    "estocolmo": ["stockholm"],
+    "copenhague": ["copenhagen"],
+    "viena": ["vienna"],
+    "bruselas": ["brussels"],
+    "atenas": ["athens"],
+    "teheran": ["tehran"]
+};
+
+function alternatives(cap) {
+    const names = [cap.country, cap.name];
+
+    names.push(...(ALIAS[norm(cap.country)] || []));
+    names.push(...(CAPITAL_ALIAS[norm(cap.name)] || []));
+
+    return [...new Set(names.map(norm))];
+}
+
+function levenshtein(a, b) {
+    let previous = Array.from(
+        {length: b.length + 1},
+        (_, i) => i
+    );
+
+    for (let i = 1; i <= a.length; i++) {
+        const current = [i];
+
+        for (let j = 1; j <= b.length; j++) {
+            current[j] = Math.min(
+                previous[j] + 1,
+                current[j - 1] + 1,
+                previous[j - 1] +
+                    (a[i - 1] === b[j - 1] ? 0 : 1)
+            );
+        }
+
+        previous = current;
+    }
+
+    return previous[b.length];
+}
+
+function score(query, names) {
+    let best = 0;
+
+    for (const name of names) {
+        if (name === query) return 100;
+
+        if (name.startsWith(query)) {
+            best = Math.max(best, 90);
+            continue;
+        }
+
+        if (name.includes(query)) {
+            best = Math.max(best, 75);
+            continue;
+        }
+
+        if (query.length < 3) continue;
+
+        for (const word of [name, ...name.split(" ")]) {
+            const max = Math.max(query.length, word.length);
+
+            const similarity =
+                1 - levenshtein(query, word) / max;
+
+            const threshold =
+                query.length <= 4 ? 0.8 : 0.68;
+
+            if (similarity >= threshold) {
+                best = Math.max(
+                    best,
+                    Math.round(similarity * 70)
+                );
+            }
+        }
+    }
+
+    return best;
+}
+
+function searchResults() {
+    const query = norm($("search").value);
+    const region = $("continent").value;
+
+    const results = [];
+
+    for (const capital of atlas) {
+        if (region && capital.region !== region) continue;
+
+        const names = alternatives(capital);
+        const points = query ? score(query, names) : 0;
+
+        if (!query || points > 0) {
+            results.push({capital, points, names});
+        }
+    }
+
+    results.sort((a, b) =>
+        b.points - a.points ||
+        a.capital.country.localeCompare(
+            b.capital.country,
+            "es"
+        )
+    );
+
+    return results;
+}
+
+// =====================================================
+// DISTANCIA HAVERSINE
+// =====================================================
+
+function haversine(a, b) {
+    const rad = Math.PI / 180;
+
+    const dLat = (b.lat - a.lat) * rad;
+    const dLon = (b.lng - a.lng) * rad;
+
+    const h =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(a.lat * rad) *
+        Math.cos(b.lat * rad) *
+        Math.sin(dLon / 2) ** 2;
+
+    return 6371 * 2 *
+        Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// =====================================================
+// SELECTORES
+// =====================================================
+
+function updateSelectors() {
+    const options = [
+        ...atlas,
+        ...[...graph.values()].filter(
+            p => !atlas.some(c => c.id === p.id)
+        )
+    ];
+
+    for (const id of ["from", "to"]) {
+        const select = $(id);
+        const old = select.value;
+
+        select.replaceChildren();
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Selecciona una capital...";
+        select.appendChild(placeholder);
+
+        for (const place of options) {
+            const option = document.createElement("option");
+
+            option.value = place.id;
+            option.textContent =
+                `${place.name} - ${place.country}`;
+
+            select.appendChild(option);
+        }
+
+        select.value = options.some(p => p.id === old)
+            ? old : "";
+    }
+}
+
+// =====================================================
+// SELECCIÓN DEL BUSCADOR
+// =====================================================
+
+function selectCapital(id, mode) {
+    const capital = atlas.find(c => c.id === id);
+
+    if (!capital) return;
+
+    if (!graph.has(id)) {
+        graph.set(id, {...capital});
+        saveLocal();
+    }
+
+    updateSelectors();
+
+    $(mode).value = id;
+
+    resetRoutes();
+    renderGraph();
+    updateStats();
+    showCatalog();
+
+    map.flyTo(
+        [capital.lat, capital.lng],
+        5,
+        {duration: 0.6}
+    );
+
+    status(
+        `${capital.name} seleccionado como ` +
+        `${mode === "from" ? "origen" : "destino"}.`
+    );
+}
+
+function applySearch() {
+    const query = norm($("search").value);
+    const results = searchResults();
+
+    renderCapitals();
+    showCatalog();
+
+    if (!query) {
+        status("Escribe un país o capital.");
+        return;
+    }
+
+    const exact = results.find(
+        r => r.names.includes(query)
+    );
+
+    const unique =
+        results.length === 1 && query.length >= 3
+            ? results[0]
+            : null;
+
+    const chosen = exact || unique;
+
+    if (chosen) {
+        selectCapital(
+            chosen.capital.id,
+            $("searchMode").value
+        );
+    } else if (results.length) {
+        status(
+            `${results.length} coincidencias. ` +
+            "Selecciona una en el catálogo."
+        );
+    } else {
+        status("No se encontraron capitales.");
+    }
+}
+
+$("search").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(applySearch, 300);
+});
+
+$("search").addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    clearTimeout(searchTimer);
+    applySearch();
+});
+
+$("searchMode").addEventListener("change", () => {
+    $("search").value = "";
+    renderCapitals();
+    showCatalog();
+    $("search").focus();
+});
+
+$("continent").addEventListener("change", applySearch);
+
+function clearSearch() {
+    $("search").value = "";
+    $("continent").value = "";
+
+    renderCapitals();
+    showCatalog();
+}
+
+// =====================================================
+// CATÁLOGO Y MARCADORES
+// =====================================================
+
+function renderCapitals() {
+    capitalsLayer.clearLayers();
+
+    const matches = searchResults();
+
+    $("matchCount").textContent = matches.length;
+    $("searchInfo").textContent =
+        `${matches.length} coincidencia(s)`;
+
+    for (const {capital} of matches) {
+        const marker = L.circleMarker(
+            [capital.lat, capital.lng],
+            {
+                radius: 5,
+                color: "#fff",
+                weight: 1,
+                fillColor: "#2563eb",
+                fillOpacity: .85
+            }
+        ).addTo(capitalsLayer);
+
+        const popup = document.createElement("div");
+
+        const title = document.createElement("strong");
+        title.textContent = capital.country;
+
+        const description = document.createElement("p");
+        description.textContent =
+            "Capital: " + capital.name;
+
+        const actions = document.createElement("div");
+
+        for (const [text, action] of [
+            ["Origen", () => selectCapital(capital.id, "from")],
+            ["Destino", () => selectCapital(capital.id, "to")],
+            ["Añadir", () => addPlace(capital)]
+        ]) {
+            const button = document.createElement("button");
+
+            button.textContent = text;
+            button.onclick = () => {
+                action();
+                marker.closePopup();
+            };
+
+            actions.appendChild(button);
+        }
+
+        popup.append(title, description, actions);
+
+        marker.bindPopup(popup);
+    }
+}
+
+function showCatalog() {
+    const matches = searchResults();
+
+    let html = card(
+        "Buscador mundial",
+        `
+        <p>Coincidencias: <b>${matches.length}</b></p>
+        <p class="muted">
+            Busca un país, una capital o un nombre
+            aproximado. Selecciónalo como origen
+            o destino.
+        </p>
+        `
+    );
+
+    for (const {capital} of matches.slice(0, 80)) {
+        html += `
+        <div class="card">
+            <strong>${esc(capital.country)}</strong>
+            <p class="muted">
+                Capital: ${esc(capital.name)}
+            </p>
+
+            <div class="actions">
+                <button class="green"
+                    data-origin="${capital.id}">
+                    Origen
+                </button>
+
+                <button class="yellow"
+                    data-destination="${capital.id}">
+                    Destino
+                </button>
+
+                <button data-add="${capital.id}"
+                    ${graph.has(capital.id) ? "disabled" : ""}>
+                    ${graph.has(capital.id)
+                        ? "Añadida"
+                        : "+ Añadir"}
+                </button>
+            </div>
+        </div>`;
+    }
+
+    if (!matches.length) {
+        html += card(
+            "Sin resultados",
+            "<p>Prueba con otro nombre o continente.</p>"
+        );
+    }
+
+    if (matches.length > 80) {
+        html += card(
+            "Más resultados",
+            "<p>Utiliza la búsqueda para filtrar el catálogo.</p>"
+        );
+    }
+
+    setResults(html);
+
+    document.querySelectorAll("[data-origin]").forEach(b => {
+        b.onclick = () =>
+            selectCapital(b.dataset.origin, "from");
+    });
+
+    document.querySelectorAll("[data-destination]").forEach(b => {
+        b.onclick = () =>
+            selectCapital(b.dataset.destination, "to");
+    });
+
+    document.querySelectorAll("[data-add]").forEach(b => {
+        b.onclick = () => {
+            const cap = atlas.find(
+                c => c.id === b.dataset.add
+            );
+
+            if (cap) addPlace(cap);
+        };
+    });
+}
+
+// =====================================================
+// ADMINISTRACIÓN DE LUGARES
+// =====================================================
+
+function addPlace(place) {
+    if (graph.has(place.id)) {
+        status("El lugar ya está agregado.");
+        return;
+    }
+
+    graph.set(place.id, {...place});
+
+    changed("Capital agregada.");
+
+    map.flyTo([place.lat, place.lng], 5);
+}
+
+function addSelected() {
+    const ids = [
+        $("from").value,
+        $("to").value
+    ].filter(Boolean);
+
+    if (!ids.length) {
+        alert("Selecciona una capital.");
+        return;
+    }
+
+    for (const id of new Set(ids)) {
+        if (graph.has(id)) continue;
+
+        const cap = atlas.find(c => c.id === id);
+
+        if (cap) graph.set(id, {...cap});
+    }
+
+    changed("Capitales agregadas al grafo.");
+}
+
+function findPlace(id) {
+    return graph.get(id) ||
+        atlas.find(c => c.id === id);
+}
+
+function endpoints() {
+    const a = $("from").value;
+    const b = $("to").value;
+
+    if (!a || !b) {
+        alert("Selecciona origen y destino.");
+        return null;
+    }
+
+    if (a === b) {
+        alert("Selecciona dos lugares diferentes.");
+        return null;
+    }
+
+    const p1 = findPlace(a);
+    const p2 = findPlace(b);
+
+    if (!p1 || !p2) return null;
+
+    if (!graph.has(a)) graph.set(a, {...p1});
+    if (!graph.has(b)) graph.set(b, {...p2});
+
+    saveLocal();
+    renderGraph();
+    updateStats();
+
+    return [a, b];
+}
+
+function deletePlace() {
+    const id = $("from").value;
+
+    if (!graph.has(id)) {
+        alert("Selecciona un lugar del grafo.");
+        return;
+    }
+
+    if (!confirm("¿Eliminar el lugar y sus conexiones?"))
+        return;
+
+    graph.delete(id);
+
+    connections = connections.filter(
+        e => e.a !== id && e.b !== id
+    );
+
+    $("from").value = "";
+
+    changed("Lugar eliminado.");
+}
+
+function clearGraph() {
+    if (!confirm("¿Eliminar todo el grafo?"))
+        return;
+
+    graph.clear();
+    connections = [];
+
+    $("from").value = "";
+    $("to").value = "";
+
+    changed("Grafo vacío.");
+}
+
+// =====================================================
+// LUGARES PERSONALIZADOS
+// =====================================================
+
+function toggleCustom() {
+    customMode = !customMode;
+
+    $("customButton").textContent = customMode
+        ? "Cancelar selección"
+        : "+ Lugar personalizado";
+
+    status(customMode
+        ? "Haz clic sobre el mapa para agregar un lugar."
+        : "Modo personalizado desactivado.");
+}
+
+map.on("click", event => {
+    if (!customMode) return;
+
+    const name = prompt("Nombre del lugar:");
+
+    if (name === null) return;
+
+    if (!name.trim() || name.length > 100) {
+        alert("Nombre inválido.");
+        return;
+    }
+
+    const id = "CUSTOM_" + Date.now();
+
+    customMode = false;
+
+    $("customButton").textContent =
+        "+ Lugar personalizado";
+
+    addPlace({
+        id,
+        name: name.trim(),
+        country: "Personalizado",
+        region: "Other",
+        lat: event.latlng.lat,
+        lng: event.latlng.lng
+    });
+});
+
+// =====================================================
+// ADMINISTRACIÓN DE CONEXIONES
+// =====================================================
+
+function findConnection(a, b) {
+    return connections.find(e =>
+        (e.a === a && e.b === b) ||
+        (e.a === b && e.b === a)
+    );
+}
+
+function askKM(value) {
+    const response = prompt(
+        "Distancia en kilómetros:",
+        Math.max(1, Math.round(value))
+    );
+
+    if (response === null) return null;
+
+    const km = Number(response);
+
+    if (!Number.isFinite(km) ||
+        km <= 0 || km > 10000000) {
+        alert("Introduce una distancia positiva válida.");
+        return null;
+    }
+
+    return km;
+}
+
+function addConnection() {
+    const pair = endpoints();
+
+    if (!pair) return;
+
+    const [a, b] = pair;
+
+    if (findConnection(a, b)) {
+        alert("La conexión ya existe.");
+        return;
+    }
+
+    const km = askKM(
+        haversine(graph.get(a), graph.get(b))
+    );
+
+    if (km === null) return;
+
+    connections.push({a, b, km});
+
+    changed("Conexión creada.");
+}
+
+function editConnection() {
+    const pair = endpoints();
+
+    if (!pair) return;
+
+    const edge = findConnection(...pair);
+
+    if (!edge) {
+        alert("No existe esa conexión.");
+        return;
+    }
+
+    const km = askKM(edge.km);
+
+    if (km === null) return;
+
+    edge.km = km;
+
+    changed("Distancia modificada.");
+}
+
+function deleteConnection() {
+    const pair = endpoints();
+
+    if (!pair) return;
+
+    const edge = findConnection(...pair);
+
+    if (!edge) {
+        alert("No existe esa conexión.");
+        return;
+    }
+
+    if (!confirm("¿Eliminar esta conexión?"))
+        return;
+
+    connections = connections.filter(e => e !== edge);
+
+    changed("Conexión eliminada.");
+}
+
+// =====================================================
+// CONEXIONES AUTOMÁTICAS
+// =====================================================
+
+// Esta función crea una conexión entre cada par
+// de lugares del grafo que aún no tenga una.
+// No modifica conexiones manuales existentes.
+
+function connectAll(silent = false) {
+    const ids = [...graph.keys()];
+
+    if (ids.length < 2) {
+        if (!silent) {
+            alert("Agrega al menos dos lugares.");
+        }
+        return false;
+    }
+
+    // Limitar la generación de un grafo completo.
+    // Con 40 lugares se generan como máximo 780 aristas.
+    if (ids.length > 40) {
+        if (!silent) {
+            alert(
+                "La conexión automática admite " +
+                "hasta 40 lugares por ejecución."
+            );
+        }
+        return false;
+    }
+
+    let count = 0;
+
+    for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+            const a = ids[i];
+            const b = ids[j];
+
+            if (findConnection(a, b)) continue;
+
+            const km = Math.max(
+                1,
+                Math.round(
+                    haversine(
+                        graph.get(a),
+                        graph.get(b)
+                    )
+                )
+            );
+
+            connections.push({a, b, km});
+            count++;
+        }
+    }
+
+    resetRoutes();
+    saveLocal();
+    renderGraph();
+    updateStats();
+
+    if (!silent) {
+        showConnections();
+    }
+
+    status(
+        `Se generaron ${count} conexiones automáticas. ` +
+        `Total: ${connections.length}.`
+    );
+
+    return true;
+}
+
+// =====================================================
+// PREPARAR ALGORITMOS
+// =====================================================
+
+// Si no hay conexiones, el programa genera una red
+// automáticamente. Si ya existen, las respeta.
+
+function prepareAlgorithm(requirePair = true) {
+    if (requirePair) {
+        const pair = endpoints();
+
+        if (!pair) return null;
+    }
+
+    if (graph.size < 2) {
+        alert("Necesitas al menos dos lugares.");
+        return null;
+    }
+
+    if (connections.length === 0) {
+        const success = connectAll(true);
+
+        if (!success) return null;
+    }
+
+    return requirePair
+        ? [$("from").value, $("to").value]
+        : true;
+}
+
+// =====================================================
+// VISUALIZAR NODOS Y ARISTAS
+// =====================================================
+
+function renderGraph() {
+    nodesLayer.clearLayers();
+    edgesLayer.clearLayers();
+
+    for (const edge of connections) {
+        const a = graph.get(edge.a);
+        const b = graph.get(edge.b);
+
+        if (!a || !b) continue;
+
+        L.polyline(
+            [
+                [a.lat, a.lng],
+                [b.lat, b.lng]
+            ],
+            {
+                color: "#ef923c",
+                weight: 3,
+                opacity: .8
+            }
+        )
+        .bindTooltip(
+            `${esc(a.name)} ↔ ${esc(b.name)}: ${fmt(edge.km)} km`
+        )
+        .addTo(edgesLayer);
+    }
+
+    for (const [id, place] of graph) {
+        const marker = L.marker(
+            [place.lat, place.lng],
+            {
+                draggable: true,
+                autoPan: true
+            }
+        ).addTo(nodesLayer);
+
+        marker.bindTooltip(esc(place.name));
+
+        marker.on("click", () => {
+            const role = prompt(
+                `Seleccionar ${place.name} como:\n` +
+                "1. Origen\n2. Destino",
+                "1"
+            );
+
+            if (role === "1" || role === "2") {
+                updateSelectors();
+
+                $(role === "1" ? "from" : "to").value = id;
+
+                status(place.name + " seleccionado.");
+            }
+        });
+
+        marker.on("dragend", () => {
+            const pos = marker.getLatLng();
+
+            place.lat = pos.lat;
+            place.lng = pos.lng;
+
+            resetRoutes();
+            saveLocal();
+            renderGraph();
+
+            status(
+                "Posición actualizada. " +
+                "Las distancias existentes no se modificaron."
+            );
+        });
+    }
+
+    redrawRoute();
+    updateStats();
+}
+
+function redrawRoute() {
+    routesLayer.clearLayers();
+
+    if (selectedEdges.length) {
+        for (const edge of selectedEdges) {
+            const a = graph.get(edge.a);
+            const b = graph.get(edge.b);
+
+            if (!a || !b) continue;
+
+            L.polyline(
+                [[a.lat, a.lng], [b.lat, b.lng]],
+                {
+                    color: "#00b889",
+                    weight: 6
+                }
+            ).addTo(routesLayer);
+        }
+
+        return;
+    }
+
+    for (let i = 0; i < activePath.length - 1; i++) {
+        const a = graph.get(activePath[i]);
+        const b = graph.get(activePath[i + 1]);
+
+        if (!a || !b) continue;
+
+        L.polyline(
+            [[a.lat, a.lng], [b.lat, b.lng]],
+            {
+                color: "#00b889",
+                weight: 6
+            }
+        ).addTo(routesLayer);
+    }
+}
+
+function changed(message) {
+    resetRoutes();
+    saveLocal();
+    updateSelectors();
+    renderCapitals();
+    renderGraph();
+    showConnections();
+    status(message);
+}
+
+// =====================================================
+// LISTA DE ADYACENCIA
+// =====================================================
+
+function adjacency() {
+    const adj = new Map();
+
+    for (const id of graph.keys()) {
+        adj.set(id, []);
+    }
+
+    for (const edge of connections) {
+        adj.get(edge.a).push({
+            id: edge.b,
+            km: edge.km
+        });
+
+        adj.get(edge.b).push({
+            id: edge.a,
+            km: edge.km
+        });
+    }
+
+    return adj;
+}
+
+// =====================================================
+// 1. ALGORITMO DE DIJKSTRA
+// =====================================================
+
+function dijkstra(start, end) {
+    const adj = adjacency();
+
+    const dist = new Map();
+    const previous = new Map();
+    const pending = new Set(graph.keys());
+
+    for (const id of pending) {
+        dist.set(id, Infinity);
+    }
+
+    dist.set(start, 0);
+
+    while (pending.size) {
+        let current = null;
+
+        for (const id of pending) {
+            if (
+                current === null ||
+                dist.get(id) < dist.get(current)
+            ) {
+                current = id;
+            }
+        }
+
+        if (
+            current === null ||
+            dist.get(current) === Infinity
+        ) break;
+
+        pending.delete(current);
+
+        if (current === end) break;
+
+        for (const next of adj.get(current)) {
+            const candidate =
+                dist.get(current) + next.km;
+
+            if (candidate < dist.get(next.id)) {
+                dist.set(next.id, candidate);
+                previous.set(next.id, current);
+            }
+        }
+    }
+
+    if (dist.get(end) === Infinity) return null;
+
+    const path = [];
+    let current = end;
+
+    while (current !== undefined) {
+        path.unshift(current);
+        current = previous.get(current);
+    }
+
+    return {
+        path,
+        cost: dist.get(end)
+    };
+}
+
+function runDijkstra() {
+    const pair = prepareAlgorithm();
+
+    if (!pair) return;
+
+    showRoute("Dijkstra", dijkstra(...pair));
+}
+
+// =====================================================
+// 2. ALGORITMO DE FLOYD-WARSHALL
+// =====================================================
+
+function floydWarshall() {
+    const ids = [...graph.keys()];
+    const n = ids.length;
+
+    const idx = new Map(
+        ids.map((id, i) => [id, i])
+    );
+
+    const dist = Array.from(
+        {length: n},
+        () => Array(n).fill(Infinity)
+    );
+
+    const next = Array.from(
+        {length: n},
+        () => Array(n).fill(null)
+    );
+
+    for (let i = 0; i < n; i++) {
+        dist[i][i] = 0;
+        next[i][i] = i;
+    }
+
+    for (const edge of connections) {
+        const i = idx.get(edge.a);
+        const j = idx.get(edge.b);
+
+        dist[i][j] = Math.min(dist[i][j], edge.km);
+        dist[j][i] = Math.min(dist[j][i], edge.km);
+
+        next[i][j] = j;
+        next[j][i] = i;
+    }
+
+    for (let k = 0; k < n; k++) {
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                const candidate =
+                    dist[i][k] + dist[k][j];
+
+                if (candidate < dist[i][j]) {
+                    dist[i][j] = candidate;
+                    next[i][j] = next[i][k];
+                }
+            }
+        }
+    }
+
+    return {ids, idx, dist, next};
+}
+
+function runFloyd() {
+    const pair = prepareAlgorithm();
+
+    if (!pair) return;
+
+    if (graph.size > 50) {
+        alert("Floyd-Warshall admite hasta 50 lugares.");
+        return;
+    }
+
+    const [a, b] = pair;
+    const data = floydWarshall();
+
+    let i = data.idx.get(a);
+    const j = data.idx.get(b);
+
+    let path = null;
+
+    if (data.next[i][j] !== null) {
+        path = [a];
+
+        while (i !== j) {
+            i = data.next[i][j];
+            path.push(data.ids[i]);
+        }
+    }
+
+    showRoute(
+        "Floyd-Warshall",
+        path
+            ? {
+                path,
+                cost: data.dist[data.idx.get(a)][j]
+              }
+            : null
+    );
+
+    $("results").insertAdjacentHTML(
+        "beforeend",
+        matrixHTML(
+            data.ids,
+            data.dist,
+            "Matriz de distancias mínimas"
+        )
+    );
+}
+
+// =====================================================
+// 3. ALGORITMO DE WARSHALL
+// =====================================================
+
+function warshall() {
+    const ids = [...graph.keys()];
+    const n = ids.length;
+
+    const idx = new Map(
+        ids.map((id, i) => [id, i])
+    );
+
+    const matrix = Array.from(
+        {length: n},
+        () => Array(n).fill(0)
+    );
+
+    for (let i = 0; i < n; i++) {
+        matrix[i][i] = 1;
+    }
+
+    for (const edge of connections) {
+        matrix[idx.get(edge.a)][idx.get(edge.b)] = 1;
+        matrix[idx.get(edge.b)][idx.get(edge.a)] = 1;
+    }
+
+    for (let k = 0; k < n; k++) {
+        for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+                if (matrix[i][k] && matrix[k][j]) {
+                    matrix[i][j] = 1;
+                }
+            }
+        }
+    }
+
+    return {ids, idx, matrix};
+}
+
+function runWarshall() {
+    const pair = prepareAlgorithm();
+
+    if (!pair) return;
+
+    if (graph.size > 50) {
+        alert("Warshall admite hasta 50 lugares.");
+        return;
+    }
+
+    const [a, b] = pair;
+    const data = warshall();
+
+    const reachable =
+        data.matrix[data.idx.get(a)][data.idx.get(b)];
+
+    resetRoutes();
+    redrawRoute();
+
+    setResults(
+        card(
+            "Algoritmo de Warshall",
+            `
+            <p>Origen: ${esc(graph.get(a).name)}</p>
+            <p>Destino: ${esc(graph.get(b).name)}</p>
+
+            <p><b>${
+                reachable
+                    ? "Sí existe un camino."
+                    : "No existe un camino."
+            }</b></p>
+
+            <p class="muted">
+                Warshall determina si dos lugares
+                están conectados, pero no calcula
+                una distancia mínima.
+            </p>
+            `
+        ) +
+        matrixHTML(
+            data.ids,
+            data.matrix,
+            "Matriz de alcanzabilidad"
+        )
+    );
+
+    status("Warshall ejecutado.");
+}
+
+// =====================================================
+// 4. ALGORITMO DE KRUSKAL
+// =====================================================
+
+function kruskal() {
+    const parent = new Map();
+    const rank = new Map();
+
+    for (const id of graph.keys()) {
+        parent.set(id, id);
+        rank.set(id, 0);
+    }
+
+    function find(x) {
+        if (parent.get(x) !== x) {
+            parent.set(x, find(parent.get(x)));
+        }
+
+        return parent.get(x);
+    }
+
+    function union(a, b) {
+        let ra = find(a);
+        let rb = find(b);
+
+        if (ra === rb) return false;
+
+        if (rank.get(ra) < rank.get(rb)) {
+            [ra, rb] = [rb, ra];
+        }
+
+        parent.set(rb, ra);
+
+        if (rank.get(ra) === rank.get(rb)) {
+            rank.set(ra, rank.get(ra) + 1);
+        }
+
+        return true;
+    }
+
+    const selected = [];
+    let total = 0;
+
+    const sorted = [...connections].sort(
+        (a, b) => a.km - b.km
+    );
+
+    for (const edge of sorted) {
+        if (union(edge.a, edge.b)) {
+            selected.push(edge);
+            total += edge.km;
+        }
+    }
+
+    return {
+        selected,
+        total,
+        connected:
+            graph.size === 0 ||
+            selected.length === graph.size - 1
+    };
+}
+
+function runKruskal() {
+    const ready = prepareAlgorithm(false);
+
+    if (!ready) return;
+
+    const result = kruskal();
+
+    resetRoutes();
+    selectedEdges = result.selected;
+    redrawRoute();
+
+    let html = card(
+        "Árbol de expansión mínima",
+        `
+        <p>${
+            result.connected
+                ? "Todos los lugares están conectados sin ciclos."
+                : "El grafo está desconectado; se obtuvo un bosque mínimo."
+        }</p>
+
+        <p>Conexiones seleccionadas:
+            ${result.selected.length}</p>
+
+        <p class="total">${fmt(result.total)} km</p>
+
+        <p class="muted">
+            Este costo representa la suma de las
+            conexiones de la red mínima.
+            No es la distancia de un viaje.
+        </p>
+        `
+    );
+
+    for (const edge of result.selected) {
+        html += card(
+            "Conexión seleccionada",
+            `
+            <p>
+                ${esc(graph.get(edge.a).name)}
+                ↔
+                ${esc(graph.get(edge.b).name)}
+            </p>
+
+            <p>${fmt(edge.km)} km</p>
+            `
+        );
+    }
+
+    setResults(html);
+
+    status("Kruskal ejecutado.");
+}
+
+// =====================================================
+// COMPARACIÓN DE LOS CUATRO ALGORITMOS
+// =====================================================
+
+function compareAlgorithms() {
+    const pair = prepareAlgorithm();
+
+    if (!pair) return;
+
+    const d = dijkstra(...pair);
+
+    let html = card(
+        "Comparación de algoritmos",
+        `
+        <p><b>Dijkstra:</b>
+        ${d ? fmt(d.cost) + " km" : "Sin camino"}</p>
+
+        <p class="muted">
+            Se comparan los caminos mínimos,
+            la alcanzabilidad y el costo de la
+            red de expansión mínima.
+        </p>
+        `
+    );
+
+    if (graph.size <= 50) {
+        const f = floydWarshall();
+
+        const cost =
+            f.dist[f.idx.get(pair[0])][f.idx.get(pair[1])];
+
+        html += card(
+            "Floyd-Warshall",
+            `
+            <p>${
+                Number.isFinite(cost)
+                    ? fmt(cost) + " km"
+                    : "Sin camino"
+            }</p>
+            `
+        );
+
+        const w = warshall();
+
+        const reachable =
+            w.matrix[w.idx.get(pair[0])][w.idx.get(pair[1])];
+
+        html += card(
+            "Warshall",
+            `
+            <p>${
+                reachable
+                    ? "Los lugares son alcanzables."
+                    : "Los lugares no son alcanzables."
+            }</p>
+            `
+        );
+    }
+
+    const k = kruskal();
+
+    html += card(
+        "Kruskal",
+        `
+        <p>Costo de la red:
+            <b>${fmt(k.total)} km</b></p>
+
+        <p>Conexiones seleccionadas:
+            ${k.selected.length}</p>
+        `
+    );
+
+    setResults(html);
+
+    status("Comparación completada.");
+}
+
+// =====================================================
+// RESULTADOS DE RUTAS
+// =====================================================
+
+function showRoute(name, result) {
+    if (!result) {
+        resetRoutes();
+        redrawRoute();
+
+        setResults(
+            card(
+                name,
+                `
+                <p>No existe una ruta entre
+                los lugares seleccionados.</p>
+
+                <p>Agrega conexiones manualmente
+                o utiliza el botón
+                Conectar automáticamente.</p>
+                `
+            )
+        );
+
+        return;
+    }
+
+    activePath = result.path;
+    selectedEdges = [];
+
+    redrawRoute();
+
+    let html = card(
+        name,
+        `
+        <p>Origen:
+            <b>${esc(graph.get(result.path[0]).name)}</b>
+        </p>
+
+        <p>Destino:
+            <b>${esc(graph.get(result.path.at(-1)).name)}</b>
+        </p>
+
+        <p class="total">${fmt(result.cost)} km</p>
+        `
+    );
+
+    let accumulated = 0;
+
+    for (let i = 0; i < result.path.length - 1; i++) {
+        const a = result.path[i];
+        const b = result.path[i + 1];
+
+        const edge = findConnection(a, b);
+
+        accumulated += edge.km;
+
+        html += `
+        <div class="step">
+            <b>Tramo ${i + 1}</b>
+
+            <p>
+                ${esc(graph.get(a).name)}
+                →
+                ${esc(graph.get(b).name)}
+            </p>
+
+            <p>${fmt(edge.km)} km</p>
+
+            <small class="muted">
+                Acumulado: ${fmt(accumulated)} km
+            </small>
+        </div>`;
+    }
+
+    setResults(html);
+
+    const points = result.path.map(id => {
+        const p = graph.get(id);
+        return [p.lat, p.lng];
+    });
+
+    if (points.length > 1) {
+        map.fitBounds(points, {
+            padding: [40, 40],
+            maxZoom: 6
+        });
+    }
+
+    status(name + " ejecutado correctamente.");
+}
+
+// =====================================================
+// MATRICES
+// =====================================================
+
+function matrixHTML(ids, matrix, title) {
+    let html = `
+    <div class="card">
+        <h3>${esc(title)}</h3>
+        <div class="scroll">
+        <table>
+        <tr>
+            <th>Origen / Destino</th>
+    `;
+
+    for (const id of ids) {
+        html += `<th>${esc(graph.get(id).name)}</th>`;
+    }
+
+    html += "</tr>";
+
+    for (let i = 0; i < ids.length; i++) {
+        html += `
+            <tr>
+            <th>${esc(graph.get(ids[i]).name)}</th>
+        `;
+
+        for (const value of matrix[i]) {
+            html += `
+                <td>${
+                    Number.isFinite(value)
+                        ? fmt(value)
+                        : "∞"
+                }</td>
+            `;
+        }
+
+        html += "</tr>";
+    }
+
+    return html + "</table></div></div>";
+}
+
+function showAdjacency() {
+    const ids = [...graph.keys()];
+
+    const matrix = ids.map(a =>
+        ids.map(b =>
+            a === b
+                ? 0
+                : (findConnection(a, b)?.km ?? 0)
+        )
+    );
+
+    setResults(
+        matrixHTML(
+            ids,
+            matrix,
+            "Matriz de adyacencia"
+        )
+    );
+}
+
+// =====================================================
+// RELACIONES DEL GRAFO
+// =====================================================
+
+function showConnections() {
+    let html = card(
+        "Relaciones del grafo",
+        `
+        <p>Ubicaciones:
+            <b>${graph.size}</b></p>
+
+        <p>Conexiones:
+            <b>${connections.length}</b></p>
+
+        <p class="muted">
+            Puedes crear conexiones de forma
+            manual o automática.
+        </p>
+        `
+    );
+
+    for (const edge of connections) {
+        html += card(
+            "Conexión",
+            `
+            <p>
+                ${esc(graph.get(edge.a).name)}
+                ↔
+                ${esc(graph.get(edge.b).name)}
+            </p>
+
+            <p>${fmt(edge.km)} km</p>
+            `
+        );
+    }
+
+    setResults(html);
+}
+
+// =====================================================
+// GUARDADO LOCAL
+// =====================================================
+
+function saveLocal() {
+    try {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+                graph: [...graph],
+                connections
+            })
+        );
+    } catch (error) {
+        console.warn("Error al guardar:", error);
+    }
+}
+
+function validateProject(data) {
+    if (
+        !data ||
+        !Array.isArray(data.graph) ||
+        !Array.isArray(data.connections) ||
+        data.graph.length > 300 ||
+        data.connections.length > 10000
+    ) {
+        throw new Error("Archivo inválido.");
+    }
+
+    const restored = new Map();
+
+    for (const entry of data.graph) {
+        if (!Array.isArray(entry) || entry.length !== 2) {
+            throw new Error("Lugar inválido.");
+        }
+
+        const [id, p] = entry;
+
+        if (
+            typeof id !== "string" ||
+            restored.has(id) ||
+            !p ||
+            typeof p.name !== "string" ||
+            !p.name.trim() ||
+            !Number.isFinite(p.lat) ||
+            !Number.isFinite(p.lng) ||
+            Math.abs(p.lat) > 90 ||
+            Math.abs(p.lng) > 180
+        ) {
+            throw new Error("Ubicación inválida.");
+        }
+
+        restored.set(id, p);
+    }
+
+    const seen = new Set();
+
+    for (const edge of data.connections) {
+        if (
+            !edge ||
+            !restored.has(edge.a) ||
+            !restored.has(edge.b) ||
+            edge.a === edge.b ||
+            !Number.isFinite(edge.km) ||
+            edge.km <= 0 ||
+            edge.km > 10000000
+        ) {
+            throw new Error("Conexión inválida.");
+        }
+
+        const key = JSON.stringify(
+            [edge.a, edge.b].sort()
+        );
+
+        if (seen.has(key)) {
+            throw new Error("Conexión duplicada.");
+        }
+
+        seen.add(key);
+    }
+
+    return restored;
+}
+
+function loadLocal() {
+    try {
+        const data = JSON.parse(
+            localStorage.getItem(STORAGE_KEY)
+        );
+
+        if (!data) return;
+
+        graph = validateProject(data);
+        connections = data.connections;
+    } catch (error) {
+        console.warn(
+            "No se pudieron recuperar datos anteriores.",
+            error
+        );
+    }
+}
+
+// =====================================================
+// IMPORTAR Y EXPORTAR JSON
+// =====================================================
+
+function exportJSON() {
+    const data = {
+        graph: [...graph],
+        connections
+    };
+
+    const blob = new Blob(
+        [JSON.stringify(data, null, 2)],
+        {type: "application/json"}
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "ADA8_Grafo_Mundial.json";
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function importJSON(event) {
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    try {
+        if (file.size > 2000000) {
+            throw new Error("Archivo demasiado grande.");
+        }
+
+        const data = JSON.parse(await file.text());
+
+        const restored = validateProject(data);
+
+        graph = restored;
+        connections = data.connections;
+
+        changed("Proyecto importado correctamente.");
+    } catch (error) {
+        alert("Error: " + error.message);
+    }
+
+    event.target.value = "";
+}
+
+// =====================================================
+// INICIALIZAR APLICACIÓN
+// =====================================================
+
+loadLocal();
+
+updateSelectors();
+renderCapitals();
+renderGraph();
+updateStats();
+showCatalog();
+
+status(
+    "Aplicación lista. Busca capitales, selecciona " +
+    "origen y destino y ejecuta un algoritmo."
+);
+
+</script>
+</body>
+</html>
